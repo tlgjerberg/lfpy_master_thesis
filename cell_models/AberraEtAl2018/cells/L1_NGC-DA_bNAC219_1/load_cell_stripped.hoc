@@ -1,0 +1,9 @@
+
+load_file("morphology.hoc")
+load_file("biophysics.hoc")
+load_file("template.hoc")
+objref cell
+proc create_cell() { local synapses_enabled
+    synapses_enabled = $1
+    cell = new bNAC219_L1_NGCDA_095997ce92(synapses_enabled)
+}

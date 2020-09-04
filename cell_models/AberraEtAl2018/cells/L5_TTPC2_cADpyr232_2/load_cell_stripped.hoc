@@ -1,0 +1,10 @@
+
+    load_file("morphology.hoc")
+    load_file("biophysics.hoc")
+    load_file("template.hoc")
+    objref cell
+    proc create_cell() { local synapses_enabled
+        synapses_enabled = $1
+        cell = new cADpyr232_L5_TTPC2_a28017c6c7(synapses_enabled)
+    }
+    
