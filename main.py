@@ -15,8 +15,9 @@ class ExternalPotential:
         self.tstop = cell_params['tstop']
         self.cell_name = cell_params['cell_name']
 
-    def _extra_celular_stimuli(self, elec_params):
-        x0, y0, z0 = elec_params['position']
+    def extra_cellular_stimuli(self, cell, elec_params):
+        print(elec_params['positions'])
+        x0, y0, z0 = elec_params['positions'][0]
         sigma = elec_params['sigma']
         start_time = elec_params['start_time']
         stop_time = elec_params['stop_time']
@@ -31,7 +32,8 @@ class ExternalPotential:
         pulse = np.zeros(n_tsteps)
         start_idx = np.argmin(np.abs(t - start_time))
         stop_idx = np.argmin(np.abs(t - stop_time))
-        pulse[start_idx:stop_idx] = elec_params['amp'] * 1000  # Test * 1000
+        pulse[start_idx:stop_idx] = elec_params['pulse_amp'] * \
+            1000  # Test * 1000
 
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
         v_cell_ext[:, :] = ext_field(cell.xmid, cell.ymid, cell.zmid).reshape(
