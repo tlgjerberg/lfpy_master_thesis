@@ -36,6 +36,10 @@ cell_parameters = cellParameters(cellsim_bisc_stick_params)
 
 cell = LFPy.Cell(**cell_parameters)
 
-simulation = ExternalPotential(cellsim_bisc_stick_params)
+extsim = ExternalPotential(cellsim_bisc_stick_params)
 
-simulation.extra_cellular_stimuli(cell, monophasic_pulse_params)
+extsim.extra_cellular_stimuli(cell, monophasic_pulse_params)
+
+cell.simulate(rec_vmem=True)
+
+extsim.plot_cellsim()
