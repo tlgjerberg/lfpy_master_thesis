@@ -2,7 +2,7 @@ import numpy as np
 cortex_top = 0
 
 positions = np.array([[0, 0, cortex_top], ], dtype=float)
-cell_dist_to_top = 1000
+cell_dist_to_top = 10
 bisc_radius = 8
 bisc_elec_pitch = 26  # um
 np.random.seed(1234)
@@ -30,7 +30,7 @@ cellsim_bisc_stick_params = dict(
     cell_dist_to_top=cell_dist_to_top,  # distance from Stimuli
     # electrode_radii=200,
     z_rot=0,
-    x_shift=100,  # Shifting cell in x direction
+    x_shift=0,  # Shifting cell in x direction
     cell_name="axon",
     spike_check_idx_args={'z': -550, 'section': "axon"},
     save_folder_name="axon_bisc",

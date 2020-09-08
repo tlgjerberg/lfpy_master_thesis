@@ -15,12 +15,13 @@ from matplotlib.patches import Ellipse
     """
 
 
-class ExternalPotential:
+class ExternalPotentialSim:
     def __init__(self, cell_params):
 
         self.cell_params = cell_params
         self.dt = cell_params['dt']
         self.tstop = cell_params['tstop']
+        self.cut_off = cell_params["cut_off"]
         self.cell_name = cell_params['cell_name']
 
     def extra_cellular_stimuli(self, cell, elec_params):
@@ -56,6 +57,24 @@ class ExternalPotential:
         cell.insert_v_ext(v_cell_ext, t)
 
         # return ext_field, pulse
+
+    def return_cell(self, cell_models_folder):
+
+        model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
+
+        cell_parameters = {
+            'morphology': model_path,
+            'nsegs_method': "lambda_f",
+            'lambda_f': 1000.,
+            'v_init': -65,
+            'passive': False,
+            'dt': self.dt,  # [ms] Should be a power of 2
+            'tstart': -self.cut_off,  # [ms] Simulation start time
+            'tstop': self.tstop,  # [ms] Simulation end time
+            "pt3d": True,
+            "extracellular": True,
+        }
+        return cell_parameters
 
     def plot_cellsim(self):
 
