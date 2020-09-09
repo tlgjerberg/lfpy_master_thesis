@@ -48,7 +48,7 @@ class ExternalPotentialSim:
         self.pulse = np.zeros(n_tsteps)
         start_idx = np.argmin(np.abs(t - start_time))
         stop_idx = np.argmin(np.abs(t - stop_time))
-        self.pulse[start_idx:stop_idx] = elec_params['pulse_amp'] * 1000
+        self.pulse[start_idx:stop_idx] = elec_params['pulse_amp']
 
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
         v_cell_ext[:, :] = self.ext_field(cell.xmid, cell.ymid, cell.zmid).reshape(
@@ -60,20 +60,48 @@ class ExternalPotentialSim:
 
     def return_cell(self, cell_models_folder):
 
-        model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
+        if self.cell_name = 'axon':
+            model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
 
-        cell_parameters = {
-            'morphology': model_path,
-            'nsegs_method': "lambda_f",
-            'lambda_f': 1000.,
-            'v_init': -65,
-            'passive': False,
-            'dt': self.dt,  # [ms] Should be a power of 2
-            'tstart': -self.cut_off,  # [ms] Simulation start time
-            'tstop': self.tstop,  # [ms] Simulation end time
-            "pt3d": True,
-            "extracellular": True,
-        }
+            cell_parameters = {
+                'morphology': model_path,
+                'nsegs_method': "lambda_f",
+                'lambda_f': 1000.,
+                'v_init': -65,
+                'passive': False,
+                'dt': self.dt,  # [ms] Should be a power of 2
+                'tstart': -self.cut_off,  # [ms] Simulation start time
+                'tstop': self.tstop,  # [ms] Simulation end time
+                "pt3d": True,
+                "extracellular": True,
+            }
+        elif self.cell_name = 'Hallermann_unmyelinated':
+            model_path = join(cell_models_folder, 'HallermannEtAl2012')
+
+            cell_parameters = {          # various cell parameters,
+                # 'morphology' : 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
+                # Mainen&Sejnowski, 1996
+                'morphology': join(model_folder, '28_04_10_num19.hoc'),
+                # 'morphology' : join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
+                # 'rm' : 30000.,      # membrane resistance
+                # 'cm' : 1.0,         # membrane capacitance
+                # 'Ra' : 150,        # axial resistance
+                # 'passive_parameters':dict(g_pas=1/30., e_pas=-65),
+                'v_init': -80.,    # initial crossmembrane potential
+                # 'e_pas' : -65.,     # reversal potential passive mechs
+                'passive': False,   # switch on passive mechs
+                'nsegs_method': 'lambda_f',
+                'lambda_f': 100.,
+                'dt': self.dt,   # [ms] dt's should be in powers of 2 for both,
+                'tstart': -self.cut_off,    # start time of simulation, recorders start at t=0
+                'tstop': self.tstop,   # stop simulation at 200 ms. These can be overridden
+                                    # by setting these arguments i cell.simulation()
+                "extracellular": True,
+                "pt3d": True,
+                'custom_code': [join(model_folder, 'Cell parameters.hoc'),
+                                join(model_folder, 'charge_only_unmyelinated.hoc')]
+            }
+
         return cell_parameters
 
     def plot_cellsim(self):
@@ -85,22 +113,34 @@ class ExternalPotentialSim:
 
         plt.figure(figsize=(16, 9))
 
-        v_field_ext = np.zeros((50, 200))
-        xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
-        zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        v_field_ext = np.zeros((50, 150))
+        xf = np.linspace(-200, 200, 50)
+        zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 150)
 
         for xidx, x in enumerate(xf):
 
             for zidx, z in enumerate(zf):
                 v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
 
+        vmax = np.max(np.abs(v_field_ext)) / 5
+        print(vmax)
         plt.subplots_adjust(hspace=0.5)
-        plt.subplot(121, aspect='equal', xlabel='x [$\mu m$]', ylabel='z [$\mu m$]',
+        plt.subplot(121, aspect='equal', xlabel='x [$\mu m$]', ylabel='y [$\mu m$]',
                     xlim=[-400, 400], xticks=[-400, 0, 400], title='Green dots: Measurement points')
-        plt.imshow(v_field_ext.T, extent=[np.min(self.cell.xend), np.max(self.cell.xend), np.min(self.cell.zend), np.max(self.cell.zend)],
-                   origin='lower', interpolation='nearest', cmap=plt.cm.bwr_r, vmin=-150, vmax=150)
+        plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+                   origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
 
-        l, = plt.plot(self.x0, self.z0, 'y*', ms=12)
+        # plt.subplot(121)
+        # plt.imshow(np.abs(v_field_ext.T), extent=[np.min(xf), np.max(
+        #     xf), np.min(zf), np.max(zf)])
+
+        plt.colorbar(label='mV')
+        [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
+         for idx in range(self.cell.totnsegs)]
+        [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
+         for idx in cell_plot_idxs]
+
+        l, = plt.plot(self.x0, self.z0, 'y*', ms=2)
         plt.legend([l], ["point current source"], frameon=False)
 
         # Plotting the membrane potentials
