@@ -60,7 +60,7 @@ class ExternalPotentialSim:
 
     def return_cell(self, cell_models_folder):
 
-        if self.cell_name = 'axon':
+        if self.cell_name == 'axon':
             model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
 
             cell_parameters = {
@@ -75,13 +75,15 @@ class ExternalPotentialSim:
                 "pt3d": True,
                 "extracellular": True,
             }
-        elif self.cell_name = 'Hallermann_unmyelinated':
+        elif self.cell_name == 'Hallermann':
             model_path = join(cell_models_folder, 'HallermannEtAl2012')
+
+            neuron.load_mechanisms(cell_models_folder)
 
             cell_parameters = {          # various cell parameters,
                 # 'morphology' : 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
                 # Mainen&Sejnowski, 1996
-                'morphology': join(model_folder, '28_04_10_num19.hoc'),
+                'morphology': join(model_path, '28_04_10_num19.hoc'),
                 # 'morphology' : join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
                 # 'rm' : 30000.,      # membrane resistance
                 # 'cm' : 1.0,         # membrane capacitance
@@ -98,8 +100,8 @@ class ExternalPotentialSim:
                                     # by setting these arguments i cell.simulation()
                 "extracellular": True,
                 "pt3d": True,
-                'custom_code': [join(model_folder, 'Cell parameters.hoc'),
-                                join(model_folder, 'charge_only_unmyelinated.hoc')]
+                # 'custom_code': [join(cell_models_folder, 'Cell parameters.hoc'),
+                #                 join(cell_models_folder, 'charge_only_unmyelinated.hoc')]
             }
 
         return cell_parameters
@@ -113,9 +115,9 @@ class ExternalPotentialSim:
 
         plt.figure(figsize=(16, 9))
 
-        v_field_ext = np.zeros((50, 150))
+        v_field_ext = np.zeros((50, 200))
         xf = np.linspace(-200, 200, 50)
-        zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 150)
+        zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
 
         for xidx, x in enumerate(xf):
 
@@ -126,7 +128,7 @@ class ExternalPotentialSim:
         print(vmax)
         plt.subplots_adjust(hspace=0.5)
         plt.subplot(121, aspect='equal', xlabel='x [$\mu m$]', ylabel='y [$\mu m$]',
-                    xlim=[-400, 400], xticks=[-400, 0, 400], title='Green dots: Measurement points')
+                    xlim=[-500, 500], xticks=[-500, 0, 500], title='Green dots: Measurement points')
         plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
                    origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
 
