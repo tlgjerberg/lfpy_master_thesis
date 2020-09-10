@@ -10,10 +10,24 @@ import os
 from os.path import join
 import sys
 
+"""
+
+Improve plotting
+
+Add method for running over a set of electrode positions and current amplitudes
+
+Create plot of Hallermann pyrmidal cell (4 figs?) showing electrode near soma,
+dendrite and axon to demonstrate if activation is possible and at what current
+amplitude.
+
+Stimulate using current of 10 muA and go lower after (Histed et Al)
+
+"""
+
 root_folder = os.path.abspath(join(os.path.dirname(__file__), '..'))
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 
-print(cell_models_folder)
+# print(cell_models_folder)
 
 # model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
 
@@ -41,7 +55,7 @@ cell_parameters = hmsim.return_cell(cell_models_folder)
 
 cell = LFPy.Cell(**cell_parameters)
 
-neuron.h('forall insert hh')
+# neuron.h('forall insert hh')
 
 hmsim.extra_cellular_stimuli(cell, monophasic_pulse_params)
 
@@ -49,3 +63,14 @@ cell.simulate(rec_vmem=True)
 cell.set_rotation(x=4.729, y=-3.166, z=-3)
 
 hmsim.plot_cellsim()
+
+
+def run_ext_sim():
+
+    for I in current_amps:
+
+        monophasic_pulse_params['pulse_amp'] = I
+
+        for pos in positions:
+
+            monophasic_pulse_params['positions'] = pos
