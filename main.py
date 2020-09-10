@@ -8,14 +8,9 @@ import sys
 from os.path import join
 from matplotlib.patches import Ellipse
 
-"""
-    Parameters: LFPy Cell object, dict containing electrode parameters
-
-    Returns:
-    """
-
 
 class ExternalPotentialSim:
+
     def __init__(self, cell_params):
 
         self.cell_params = cell_params
@@ -25,7 +20,11 @@ class ExternalPotentialSim:
         self.cell_name = cell_params['cell_name']
 
     def extra_cellular_stimuli(self, cell, elec_params):
+        """
+        Parameters: LFPy Cell object, dict of electrode parameters
 
+        Returns:
+        """
         self.cell = cell
         self.elec_params = elec_params
         self.amp = elec_params['pulse_amp']
@@ -108,15 +107,14 @@ class ExternalPotentialSim:
 
     def plot_cellsim(self):
 
-        cell_plot_idxs = [0, int(self.cell.totnsegs / 2),
-                          self.cell.totnsegs - 1]
+        cell_plot_idxs = [0, 83, 300]
         cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
             1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
 
         plt.figure(figsize=(16, 9))
 
         v_field_ext = np.zeros((50, 200))
-        xf = np.linspace(-200, 200, 50)
+        xf = np.linspace(-500, 500, 50)
         zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
 
         for xidx, x in enumerate(xf):
@@ -154,4 +152,115 @@ class ExternalPotentialSim:
         ax1 = plt.subplot(224, ylim=[-2 * np.max(np.abs(self.pulse / 1000)), 2 * np.max(np.abs(self.pulse / 1000))],
                           ylabel='$\mu$A', title='Injected current')
         ax1.plot(self.cell.tvec, self.pulse / 1000)
+        plt.show()
+
+    def plot_cellsim_copy(self, measure_idxs):
+
+        cell_plot_idxs = measure_idxs.astype(
+            dtype='int')  # List of measurement points
+        print(cell_plot_idxs[0])
+        cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
+            1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
+
+        # Defining figure frame and parameters
+        fig = plt.figure(figsize=[18, 8])
+        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.4, right=0.96,
+                            top=0.97, bottom=0.1)
+
+        # Adding axes with appropriate parameters
+        ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.97], aspect=1, frameon=False,
+                            xticks=[], yticks=[], ylim=[-1900, 300], xlim=[-300, 300])
+
+        # Names of different neuron parts and color codings for each
+        possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
+                          "hill", "apic", "dend", "soma"]
+        sec_clrs = {"Myelin": 'olive',
+                    "dend": '0.3',
+                    "soma": 'k',
+                    'apic': '0.6',
+                    "axon": 'lightgreen',
+                    "Unmyelin": 'salmon',
+                    "Node": 'r',
+                    "hilloc": 'lightblue',
+                    "hill": 'pink', }
+        used_clrs = []
+
+        # Sets each segment to the color matching the name set by sec_clrs
+        for idx in range(self.cell.totnsegs):
+            sec_name = self.cell.get_idx_name(idx)[1]
+            # print(sec_name)
+            # c = 'k'
+            for ax_name in possible_names:
+                if ax_name in sec_name:
+                    # print(ax_name, sec_name)
+                    c = sec_clrs[ax_name]
+                    if not ax_name in used_clrs:
+                        used_clrs.append(ax_name)
+
+            # Plotting cell
+            ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
+                      [self.cell.zstart[idx], self.cell.zend[idx]], '-',
+                      c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)
+
+        lines = []
+        for name in used_clrs:
+            l, = ax_m.plot([0], [0], lw=2, c=sec_clrs[name])
+            lines.append(l)
+        ax_m.legend(lines, used_clrs, frameon=False,
+                    fontsize=8, loc=(0.05, 0.0), ncol=2)
+
+        # Plotting dots at the middle of a given section in its given color
+        [ax_m.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o',
+                   c=cell_plot_colors[idx], ms=13) for idx in cell_plot_idxs]
+
+        ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
+                  fontsize=9, ha='center')
+
+        for e_idx in range(len(self.elec_params["positions"])):
+            ellipse_pos = [self.elec_params["positions"][e_idx]
+                           [0], self.elec_params["positions"][e_idx][2]]
+
+            ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
+                                    height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
+        # fig = plt.figure(figsize=(16, 9))
+        #
+        # v_field_ext = np.zeros((50, 200))
+        # xf = np.linspace(-500, 500, 50)
+        # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        #
+        # for xidx, x in enumerate(xf):
+        #
+        #     for zidx, z in enumerate(zf):
+        #         v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
+        #
+        # vmax = np.max(np.abs(v_field_ext)) / 5
+        # print(vmax)
+        #
+        # fig.subplots_adjust(hspace=0.5)
+        # plt.subplot(121, aspect='equal', xlabel='x [$\mu m$]', ylabel='y [$\mu m$]',
+        #             xlim=[-500, 500], xticks=[-500, 0, 500], title='Green dots: Measurement points')
+        # plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+        #            origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
+        #
+        # ax = fig.add_axes([-0.01, 0.05, 0.2, 0.97], aspect=1, frameon=False,
+        #                   xticks=[], yticks=[], ylim=[-1900, 300], xlim=[-300, 300])
+        #
+        # plt.colorbar(label='mV')
+        # [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
+        #  for idx in range(self.cell.totnsegs)]
+        # [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
+        #  for idx in cell_plot_idxs]
+        #
+        # l, = plt.plot(self.x0, self.z0, 'y*', ms=2)
+        # plt.legend([l], ["point current source"], frameon=False)
+        #
+        # # Plotting the membrane potentials
+        # plt.subplot(222, title='Membrane potential',
+        #             xlabel='Time [ms]', ylabel='mV', ylim=[-80, 20])
+        # [plt.plot(self.cell.tvec, self.cell.vmem[idx, :], c=cell_plot_colors[idx], lw=2)
+        #  for idx in cell_plot_idxs]
+        #
+        # ax1 = plt.subplot(224, ylim=[-2 * np.max(np.abs(self.pulse / 1000)), 2 * np.max(np.abs(self.pulse / 1000))],
+        #                   ylabel='$\mu$A', title='Injected current')
+        # ax1.plot(self.cell.tvec, self.pulse / 1000)
         plt.show()
