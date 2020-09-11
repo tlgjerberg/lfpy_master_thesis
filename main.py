@@ -69,12 +69,8 @@ class ExternalPotentialSim:
             }
             cell = LFPy.Cell(**cell_parameters)
             self.cell = cell
-            # cell = scale_soma_diameter(cell, cell_parameters, 10)
-            # cell.set_rotation(x=np.pi / 2, y=-0.1)
-            # cell.set_pos(z=-np.max(cell.zend) -
-            #              self.cell_dist_to_top, x=self.x_shift)
+
             self.cell.set_pos(z=-self.cell_dist_to_top)
-            # self.cell.set_rotation(z=self.z_rot)
             self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
             self.cell.simulate(rec_vmem=True)
 
@@ -252,53 +248,13 @@ class ExternalPotentialSim:
         #
         # if type(self.spike_time_idxs) == int:
         #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
-        # ax_stim = fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
-        #                        ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
-        # # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
-        # ax_stim.plot(self.cell.tvec, self.ext_pot.pulse / 1000, lw=0.5)
+        ax_stim = fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
+                               ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
+        # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
+        ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
 
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
         [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
                     c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
-        # fig = plt.figure(figsize=(16, 9))
-        #
-        # v_field_ext = np.zeros((50, 200))
-        # xf = np.linspace(-500, 500, 50)
-        # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
-        #
-        # for xidx, x in enumerate(xf):
-        #
-        #     for zidx, z in enumerate(zf):
-        #         v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
-        #
-        # vmax = np.max(np.abs(v_field_ext)) / 5
-        # print(vmax)
-        #
-        # fig.subplots_adjust(hspace=0.5)
-        # plt.subplot(121, aspect='equal', xlabel='x [$\mu m$]', ylabel='y [$\mu m$]',
-        #             xlim=[-500, 500], xticks=[-500, 0, 500], title='Green dots: Measurement points')
-        # plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-        #            origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
-        #
-        # ax = fig.add_axes([-0.01, 0.05, 0.2, 0.97], aspect=1, frameon=False,
-        #                   xticks=[], yticks=[], ylim=[-1900, 300], xlim=[-300, 300])
-        #
-        # plt.colorbar(label='mV')
-        # [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
-        #  for idx in range(self.cell.totnsegs)]
-        # [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
-        #  for idx in cell_plot_idxs]
-        #
-        # l, = plt.plot(self.x0, self.z0, 'y*', ms=2)
-        # plt.legend([l], ["point current source"], frameon=False)
-        #
-        # # Plotting the membrane potentials
-        # plt.subplot(222, title='Membrane potential',
-        #             xlabel='Time [ms]', ylabel='mV', ylim=[-80, 20])
-        # [plt.plot(self.cell.tvec, self.cell.vmem[idx, :], c=cell_plot_colors[idx], lw=2)
-        #  for idx in cell_plot_idxs]
-        #
-        # ax1 = plt.subplot(224, ylim=[-2 * np.max(np.abs(self.pulse / 1000)), 2 * np.max(np.abs(self.pulse / 1000))],
-        #                   ylabel='$\mu$A', title='Injected current')
-        # ax1.plot(self.cell.tvec, self.pulse / 1000)
+
         plt.show()
