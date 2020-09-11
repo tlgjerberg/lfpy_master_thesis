@@ -59,10 +59,10 @@ neuron.h('forall insert hh')
 
 hmsim.extra_cellular_stimuli(monophasic_pulse_params)
 
-hmsim.plot_cellsim_copy(np.array([0, 83, 300]))
+hmsim.plot_cellsim_alt(np.array([0, 83, 300]))
 
 
-def run_ext_sim(cell):
+def run_ext_sim(cell, sim_obj, cellsimParams):
 
     for I in current_amps:
 

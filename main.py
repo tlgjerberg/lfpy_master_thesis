@@ -120,6 +120,7 @@ class ExternalPotentialSim:
 
     def plot_cellsim(self):
 
+        # Setting cell compartments to measure AP
         cell_plot_idxs = [0, 83, 300]
         cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
             1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
@@ -167,7 +168,7 @@ class ExternalPotentialSim:
         ax1.plot(self.cell.tvec, self.pulse / 1000)
         plt.show()
 
-    def plot_cellsim_copy(self, measure_idxs):
+    def plot_cellsim_alt(self, measure_idxs):
 
         cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
@@ -210,7 +211,7 @@ class ExternalPotentialSim:
                     if not ax_name in used_clrs:
                         used_clrs.append(ax_name)
 
-            # Plotting cell
+            # Plotting cell morphology
             ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
                       [self.cell.zstart[idx], self.cell.zend[idx]], '-',
                       c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)
@@ -236,6 +237,26 @@ class ExternalPotentialSim:
             ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
                                     height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
+        # Adding external field visualization to cell morphology figure
+        v_field_ext = np.zeros((50, 200))
+        xf = np.linspace(-500, 500, 50)
+        zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+
+        for xidx, x in enumerate(xf):
+
+            for zidx, z in enumerate(zf):
+                v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
+
+        vmax = np.max(np.abs(v_field_ext)) / 5
+        plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+                   origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
+
+        plt.colorbar(label='mV')
+        [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
+         for idx in range(self.cell.totnsegs)]
+        [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
+         for idx in cell_plot_idxs]
+
         ax_top = 0.95
         ax_h = 0.4
         ax_w = 0.75
@@ -244,8 +265,8 @@ class ExternalPotentialSim:
         ax_vm = fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
                              xlim=[0, self.tstop], xlabel="Time (ms)")
 
-        # ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
-        #
+        ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
+
         # if type(self.spike_time_idxs) == int:
         #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
         ax_stim = fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
