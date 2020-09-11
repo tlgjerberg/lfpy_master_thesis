@@ -70,14 +70,12 @@ class ExternalPotentialSim:
             cell = LFPy.Cell(**cell_parameters)
             self.cell = cell
 
+            # cell.set_pos(z=-np.max(cell.zend) -
+            #              self.cell_dist_to_top, x=self.x_shift)
+            # cell.set_rotation(z=self.z_rot)
             self.cell.set_pos(z=-self.cell_dist_to_top)
             self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
             self.cell.simulate(rec_vmem=True)
-
-        # if not self.cell_name in aberra_cell_list:
-        # cell.set_pos(z=-np.max(cell.zend) -
-        #              self.cell_dist_to_top, x=self.x_shift)
-        # cell.set_rotation(z=self.z_rot)
 
         return cell
 
@@ -137,7 +135,6 @@ class ExternalPotentialSim:
                 v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
 
         vmax = np.max(np.abs(v_field_ext)) / 5
-        print(vmax)
         plt.subplots_adjust(hspace=0.5)
         plt.subplot(121, aspect='equal', xlabel='x [$\mu m$]', ylabel='y [$\mu m$]',
                     xlim=[-500, 500], xticks=[-500, 0, 500], title='Green dots: Measurement points')
@@ -172,7 +169,6 @@ class ExternalPotentialSim:
 
         cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
-        print(cell_plot_idxs[0])
         cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
             1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
 
@@ -199,6 +195,8 @@ class ExternalPotentialSim:
                     "hill": 'pink', }
         used_clrs = []
 
+        # PLOTTING CELL MORPHOLOGY
+
         # Sets each segment to the color matching the name set by sec_clrs
         for idx in range(self.cell.totnsegs):
             sec_name = self.cell.get_idx_name(idx)[1]
@@ -211,7 +209,6 @@ class ExternalPotentialSim:
                     if not ax_name in used_clrs:
                         used_clrs.append(ax_name)
 
-            # Plotting cell morphology
             ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
                       [self.cell.zstart[idx], self.cell.zend[idx]], '-',
                       c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)

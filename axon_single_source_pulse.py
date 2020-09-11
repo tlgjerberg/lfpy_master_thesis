@@ -27,42 +27,12 @@ Stimulate using current of 10 muA and go lower after (Histed et Al)
 root_folder = os.path.abspath(join(os.path.dirname(__file__), '..'))
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 
-# print(cell_models_folder)
 
-# model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
+def run_ext_sim(cellsimParams, elec_params, I, positions):
 
-# monophasic_pulse_params["magnitudes"] = [+.001]
-
-
-# axonsim = ExternalPotentialSim(cellsim_bisc_stick_params)
-#
-# cell_parameters = axonsim.return_cell(cell_models_folder)
-#
-# cell = LFPy.Cell(**cell_parameters)
-#
-# neuron.h('forall insert hh')
-#
-# axonsim.extra_cellular_stimuli(cell, monophasic_pulse_params)
-#
-# cell.simulate(rec_vmem=True)
-# cell.set_rotation(x=4.729, y=-3.166)
-#
-# axonsim.plot_cellsim()
-
-cellsim_Hallermann_params['cell_dist_to_top'] = 900
-
-hmsim = ExternalPotentialSim(cellsim_Hallermann_params)
-
-cell_parameters = hmsim.return_cell(cell_models_folder)
-
-neuron.h('forall insert hh')
-
-hmsim.extra_cellular_stimuli(monophasic_pulse_params)
-
-hmsim.plot_cellsim_alt(np.array([0, 83, 300]))
-
-
-def run_ext_sim(cell, sim_obj, cellsimParams):
+    neuron.h('forall insert hh')
+    extPotSim = ExternalPotentialSim(cellsimParams)
+    cell = extPotSim.return_cell(cell_models_folder)
 
     for I in current_amps:
 
@@ -71,3 +41,14 @@ def run_ext_sim(cell, sim_obj, cellsimParams):
         for pos in positions:
 
             monophasic_pulse_params['positions'] = pos
+            extPotSim.extra_cellular_stimuli(monophasic_pulse_params)
+            extPotSim.plot_cellsim_alt(np.array([0, 83, 300]))
+
+
+# Test parameters
+current_amps = [1e4, 5e4, 1e5]  # uA
+positions = [np.array([[200, 0, -40], ], dtype=float)]
+cellsim_Hallermann_params['cell_dist_to_top'] = 900
+
+run_ext_sim(cellsim_Hallermann_params,
+            monophasic_pulse_params, current_amps, positions)
