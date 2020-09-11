@@ -18,44 +18,9 @@ class ExternalPotentialSim:
         self.tstop = cell_params['tstop']
         self.cut_off = cell_params["cut_off"]
         self.cell_name = cell_params['cell_name']
-
-    def extra_cellular_stimuli(self, cell, elec_params):
-        """
-        Parameters: LFPy Cell object, dict of electrode parameters
-
-        Returns:
-        """
-        self.cell = cell
-        self.elec_params = elec_params
-        self.amp = elec_params['pulse_amp']
-        self.x0, self.y0, self.z0 = elec_params['positions'][0]
-        sigma = elec_params['sigma']
-        start_time = elec_params['start_time']
-        stop_time = elec_params['stop_time']
-
-        # Calculating external field
-        self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
-                                                           np.sqrt((self.x0 - x)**2 +
-                                                                   (self.y0 - y)**2 +
-                                                                   (self.z0 - z)**2)))
-
-        # Generating time steps of simulation
-        n_tsteps = int(self.tstop / self.dt + 1)
-        t = np.arange(n_tsteps) * self.dt
-
-        # Setting pulse change at a given time interval
-        self.pulse = np.zeros(n_tsteps)
-        start_idx = np.argmin(np.abs(t - start_time))
-        stop_idx = np.argmin(np.abs(t - stop_time))
-        self.pulse[start_idx:stop_idx] = elec_params['pulse_amp']
-
-        v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-        v_cell_ext[:, :] = self.ext_field(cell.xmid, cell.ymid, cell.zmid).reshape(
-            cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
-
-        cell.insert_v_ext(v_cell_ext, t)
-
-        # return ext_field, pulse
+        self.cell_dist_to_top = cell_params['cell_dist_to_top']
+        self.x_shift = cell_params['x_shift']
+        self.z_rot = cell_params['z_rot']
 
     def return_cell(self, cell_models_folder):
 
@@ -102,8 +67,60 @@ class ExternalPotentialSim:
                 # 'custom_code': [join(cell_models_folder, 'Cell parameters.hoc'),
                 #                 join(cell_models_folder, 'charge_only_unmyelinated.hoc')]
             }
+            cell = LFPy.Cell(**cell_parameters)
+            self.cell = cell
+            # cell = scale_soma_diameter(cell, cell_parameters, 10)
+            # cell.set_rotation(x=np.pi / 2, y=-0.1)
+            # cell.set_pos(z=-np.max(cell.zend) -
+            #              self.cell_dist_to_top, x=self.x_shift)
+            self.cell.set_pos(z=-self.cell_dist_to_top)
+            # self.cell.set_rotation(z=self.z_rot)
+            self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
+            self.cell.simulate(rec_vmem=True)
 
-        return cell_parameters
+        # if not self.cell_name in aberra_cell_list:
+        # cell.set_pos(z=-np.max(cell.zend) -
+        #              self.cell_dist_to_top, x=self.x_shift)
+        # cell.set_rotation(z=self.z_rot)
+
+        return cell
+
+    def extra_cellular_stimuli(self, elec_params):
+        """
+        Parameters: LFPy Cell object, dict of electrode parameters
+
+        Returns:
+        """
+        self.elec_params = elec_params
+        self.amp = elec_params['pulse_amp']
+        self.x0, self.y0, self.z0 = elec_params['positions'][0]
+        sigma = elec_params['sigma']
+        start_time = elec_params['start_time']
+        stop_time = elec_params['stop_time']
+
+        # Calculating external field
+        self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
+                                                           np.sqrt((self.x0 - x)**2 +
+                                                                   (self.y0 - y)**2 +
+                                                                   (self.z0 - z)**2)))
+
+        # Generating time steps of simulation
+        n_tsteps = int(self.tstop / self.dt + 1)
+        t = np.arange(n_tsteps) * self.dt
+
+        # Setting pulse change at a given time interval
+        self.pulse = np.zeros(n_tsteps)
+        start_idx = np.argmin(np.abs(t - start_time))
+        stop_idx = np.argmin(np.abs(t - stop_time))
+        self.pulse[start_idx:stop_idx] = elec_params['pulse_amp']
+
+        v_cell_ext = np.zeros((self.cell.totnsegs, n_tsteps))
+        v_cell_ext[:, :] = self.ext_field(self.cell.xmid, self.cell.ymid, self.cell.zmid).reshape(
+            self.cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
+
+        self.cell.insert_v_ext(v_cell_ext, t)
+
+        # return ext_field, pulse
 
     def plot_cellsim(self):
 
@@ -222,6 +239,27 @@ class ExternalPotentialSim:
 
             ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
                                     height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
+
+        ax_top = 0.95
+        ax_h = 0.4
+        ax_w = 0.75
+        ax_left = 0.2
+
+        ax_vm = fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
+                             xlim=[0, self.tstop], xlabel="Time (ms)")
+
+        # ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
+        #
+        # if type(self.spike_time_idxs) == int:
+        #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
+        # ax_stim = fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
+        #                        ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
+        # # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
+        # ax_stim.plot(self.cell.tvec, self.ext_pot.pulse / 1000, lw=0.5)
+
+        # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
+        [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
+                    c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
         # fig = plt.figure(figsize=(16, 9))
         #
         # v_field_ext = np.zeros((50, 200))

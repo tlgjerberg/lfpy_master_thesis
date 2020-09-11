@@ -1,8 +1,9 @@
 import numpy as np
 cortex_top = 0
 
-positions = np.array([[50, 0, 500], ], dtype=float)
-cell_dist_to_top = 10
+
+positions = np.array([[210, 0, 870], ], dtype=float)
+cell_dist_to_top = 20
 bisc_radius = 8
 bisc_elec_pitch = 26  # um
 np.random.seed(1234)
@@ -19,7 +20,7 @@ monophasic_pulse_params = dict(
     # pulse_type="biphasic_square",
     pulse_type="monophasic",
     # magnitudes=[-0.1e5],
-    pulse_amp=-5000,  # nA
+    pulse_amp=-5e5,  # nA
     positions=positions,
     sigma=0.3,
     field_type="point_sources")

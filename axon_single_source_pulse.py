@@ -49,23 +49,20 @@ cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 #
 # axonsim.plot_cellsim()
 
+cellsim_Hallermann_params['cell_dist_to_top'] = 900
+
 hmsim = ExternalPotentialSim(cellsim_Hallermann_params)
 
 cell_parameters = hmsim.return_cell(cell_models_folder)
 
-cell = LFPy.Cell(**cell_parameters)
+neuron.h('forall insert hh')
 
-# neuron.h('forall insert hh')
+hmsim.extra_cellular_stimuli(monophasic_pulse_params)
 
-hmsim.extra_cellular_stimuli(cell, monophasic_pulse_params)
-
-cell.simulate(rec_vmem=True)
-cell.set_rotation(x=4.729, y=-3.166, z=-3)
-
-hmsim.plot_cellsim()
+hmsim.plot_cellsim_copy(np.array([0, 83, 300]))
 
 
-def run_ext_sim():
+def run_ext_sim(cell):
 
     for I in current_amps:
 
