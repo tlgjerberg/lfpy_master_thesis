@@ -39,6 +39,9 @@ class ExternalPotentialSim:
                 "pt3d": True,
                 "extracellular": True,
             }
+            cell = LFPy.Cell(**cell_parameters)
+            self.cell = cell
+
         elif self.cell_name == 'Hallermann':
             model_path = join(cell_models_folder, 'HallermannEtAl2012')
 
@@ -75,9 +78,10 @@ class ExternalPotentialSim:
             # cell.set_rotation(z=self.z_rot)
             self.cell.set_pos(z=-self.cell_dist_to_top)
             self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
-            self.cell.simulate(rec_vmem=True)
 
-        return cell
+        self.cell.simulate(rec_vmem=True)
+
+        # return cell
 
     def extra_cellular_stimuli(self, elec_params):
         """
@@ -119,7 +123,8 @@ class ExternalPotentialSim:
     def plot_cellsim(self):
 
         # Setting cell compartments to measure AP
-        cell_plot_idxs = [0, 83, 300]
+        cell_plot_idxs = [0, int(self.cell.totnsegs / 2),
+                          self.cell.totnsegs - 1]
         cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
             1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
 
@@ -140,10 +145,6 @@ class ExternalPotentialSim:
                     xlim=[-500, 500], xticks=[-500, 0, 500], title='Green dots: Measurement points')
         plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
                    origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
-
-        # plt.subplot(121)
-        # plt.imshow(np.abs(v_field_ext.T), extent=[np.min(xf), np.max(
-        #     xf), np.min(zf), np.max(zf)])
 
         plt.colorbar(label='mV')
         [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
@@ -249,10 +250,10 @@ class ExternalPotentialSim:
                    origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
 
         plt.colorbar(label='mV')
-        [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
-         for idx in range(self.cell.totnsegs)]
-        [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
-         for idx in cell_plot_idxs]
+        # [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
+        #  for idx in range(self.cell.totnsegs)]
+        # [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
+        #  for idx in cell_plot_idxs]
 
         ax_top = 0.95
         ax_h = 0.4
