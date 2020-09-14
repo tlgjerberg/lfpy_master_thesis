@@ -50,7 +50,7 @@ def run_ext_sim(cellsimParams, elec_params, I, positions):
 # current_amps = [1e4, 5e4, 1e5]  # uA
 # positions = [np.array([[200, 0, -40], ], dtype=float),
 #              np.array([[-125, 0, -880], ], dtype=float)]
-current_amps = [5e10]  # uA
+current_amps = [1e4]  # uA
 positions = [np.array([[210, 0, -40], ], dtype=float)]
 cellsim_Hallermann_params['cell_dist_to_top'] = 900
 
