@@ -13,7 +13,10 @@ class ExternalPotentialSim:
 
     def __init__(self, cell_params):
 
+        # root_folder = os.path.abspath(join(os.path.dirname(__file__), '..'))
+
         self.cell_params = cell_params
+        self.save_folder = cell_params['save_folder_name']
         self.dt = cell_params['dt']
         self.tstop = cell_params['tstop']
         self.cut_off = cell_params["cut_off"]
@@ -79,8 +82,6 @@ class ExternalPotentialSim:
             self.cell.set_pos(z=-self.cell_dist_to_top)
             self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
 
-        # return cell
-
     def extra_cellular_stimuli(self, elec_params):
         """
         Parameters: LFPy Cell object, dict of electrode parameters
@@ -88,13 +89,14 @@ class ExternalPotentialSim:
         Returns:
         """
         self.elec_params = elec_params
-        self.amp = elec_params['pulse_amp']
+        self.amp = elec_params['pulse_amp']  # External current amplitide
+        # Electrode position
         self.x0, self.y0, self.z0 = elec_params['positions'][0]
         sigma = elec_params['sigma']
         start_time = elec_params['start_time']
         stop_time = elec_params['stop_time']
 
-        # Calculating external field
+        # Calculating external field function
         self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
                                                            np.sqrt((self.x0 - x)**2 +
                                                                    (self.y0 - y)**2 +
@@ -110,15 +112,15 @@ class ExternalPotentialSim:
         stop_idx = np.argmin(np.abs(t - stop_time))
         self.pulse[start_idx:stop_idx] = elec_params['pulse_amp']
 
+        # Applying the external field function to the cell simulation
         v_cell_ext = np.zeros((self.cell.totnsegs, n_tsteps))
         v_cell_ext[:, :] = self.ext_field(self.cell.xmid, self.cell.ymid, self.cell.zmid).reshape(
             self.cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
 
         self.cell.insert_v_ext(v_cell_ext, t)
 
-        # return ext_field, pulse
-
     def plot_cellsim(self):
+        # Simulating cell after all parameters and field has been added
         self.cell.simulate(rec_vmem=True)
 
         # Setting cell compartments to measure AP
@@ -166,6 +168,7 @@ class ExternalPotentialSim:
         plt.show()
 
     def plot_cellsim_alt(self, measure_idxs):
+        # Simulating cell after all parameters and field has been added
         self.cell.simulate(rec_vmem=True)
 
         cell_plot_idxs = measure_idxs.astype(
@@ -250,13 +253,9 @@ class ExternalPotentialSim:
                    origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
 
         plt.colorbar(label='mV')
-        # [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
-        #  for idx in range(self.cell.totnsegs)]
-        # [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
-        #  for idx in cell_plot_idxs]
 
         ax_top = 0.95
-        ax_h = 0.3
+        ax_h = 0.30
         ax_w = 0.6
         ax_left = 0.3
 
@@ -276,4 +275,6 @@ class ExternalPotentialSim:
         [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
                     c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
 
-        plt.show()
+        # plt.show()
+        plt.savefig(join(
+            self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
