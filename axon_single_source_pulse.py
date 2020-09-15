@@ -24,15 +24,17 @@ Stimulate using current of 10 muA and go lower after (Histed et Al)
 
 """
 
-root_folder = os.path.abspath(join(os.path.dirname(__file__), '..'))
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 
 
-def run_ext_sim(cellsimParams, elec_params, I, positions):
+def run_ext_sim(cellsimParams, elec_params, I, positions, passive=False):
 
-    neuron.h('forall insert hh')
     extPotSim = ExternalPotentialSim(cellsimParams)
     extPotSim.return_cell(cell_models_folder)
+
+    # Neuron activation after cell object has been created
+    if not passive:
+        neuron.h('forall insert hh')
 
     for I in current_amps:
 
@@ -47,10 +49,12 @@ def run_ext_sim(cellsimParams, elec_params, I, positions):
 
 
 # Test parameters
-# current_amps = [1e4, 5e4, 1e5]  # uA
+current_amps = [1e4, -1e4, 5e3]  # uA
 # positions = [np.array([[200, 0, -40], ], dtype=float),
-#              np.array([[-125, 0, -880], ], dtype=float)]
-current_amps = [1e4]  # uA
+#              np.array([[200, 0, 0], ], dtype=float),
+#              np.array([[-125, 0, -880], ], dtype=float),
+#              np.array([[-230, 0, 175], ], dtype=float)]
+# current_amps = [-1e4]  # uA
 positions = [np.array([[210, 0, -40], ], dtype=float)]
 cellsim_Hallermann_params['cell_dist_to_top'] = 900
 
