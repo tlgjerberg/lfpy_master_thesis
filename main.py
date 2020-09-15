@@ -256,9 +256,9 @@ class ExternalPotentialSim:
         #  for idx in cell_plot_idxs]
 
         ax_top = 0.95
-        ax_h = 0.4
-        ax_w = 0.75
-        ax_left = 0.2
+        ax_h = 0.3
+        ax_w = 0.6
+        ax_left = 0.3
 
         ax_vm = fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
                              xlim=[0, self.tstop], xlabel="Time (ms)")
