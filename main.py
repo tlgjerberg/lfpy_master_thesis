@@ -79,8 +79,6 @@ class ExternalPotentialSim:
             self.cell.set_pos(z=-self.cell_dist_to_top)
             self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
 
-        self.cell.simulate(rec_vmem=True)
-
         # return cell
 
     def extra_cellular_stimuli(self, elec_params):
@@ -121,6 +119,7 @@ class ExternalPotentialSim:
         # return ext_field, pulse
 
     def plot_cellsim(self):
+        self.cell.simulate(rec_vmem=True)
 
         # Setting cell compartments to measure AP
         cell_plot_idxs = [0, int(self.cell.totnsegs / 2),
@@ -167,6 +166,7 @@ class ExternalPotentialSim:
         plt.show()
 
     def plot_cellsim_alt(self, measure_idxs):
+        self.cell.simulate(rec_vmem=True)
 
         cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
