@@ -1,6 +1,4 @@
 import numpy as np
-cortex_top = 0
-
 
 positions = np.array([[200, 0, -40], ], dtype=float)
 cell_dist_to_top = 20
