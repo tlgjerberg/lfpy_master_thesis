@@ -22,6 +22,11 @@ amplitude.
 
 Stimulate using current of 10 muA and go lower after (Histed et Al)
 
+Create figure of axial current over distance along axon. Use simple stick model.
+
+Improve plot_cellsim_alt for easy reading and page formatting.
+
+
 """
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
@@ -44,8 +49,7 @@ def run_ext_sim(cellsimParams, elec_params, I, positions, passive=False):
 
             monophasic_pulse_params['positions'] = pos
             extPotSim.extra_cellular_stimuli(monophasic_pulse_params)
-            extPotSim.plot_cellsim_alt(np.array([0, 83, 300]))
-            # extPotSim.plot_cellsim()
+            extPotSim.plot_cellsim(np.array([0, 83, 300]))
 
 
 # Test parameters
@@ -61,3 +65,6 @@ cellsim_Hallermann_params['cell_dist_to_top'] = 900
 
 run_ext_sim(cellsim_Hallermann_params,
             monophasic_pulse_params, current_amps, positions)
+
+# extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
+# extPotSim.plot_axialCurrent()
