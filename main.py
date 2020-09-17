@@ -13,10 +13,10 @@ class ExternalPotentialSim:
 
     def __init__(self, cell_params):
 
-        # root_folder = os.path.abspath(join(os.path.dirname(__file__), '..'))
+        root_folder = os.path.dirname(__file__)
 
         self.cell_params = cell_params
-        self.save_folder = cell_params['save_folder_name']
+        self.save_folder = join(root_folder, cell_params['save_folder_name'])
         self.dt = cell_params['dt']
         self.tstop = cell_params['tstop']
         self.cut_off = cell_params["cut_off"]
@@ -276,5 +276,8 @@ class ExternalPotentialSim:
                     c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
 
         # plt.show()
-        plt.savefig(join(
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        fig.savefig(join(
             self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
