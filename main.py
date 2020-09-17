@@ -119,7 +119,7 @@ class ExternalPotentialSim:
 
         self.cell.insert_v_ext(v_cell_ext, t)
 
-    def plot_cellsim_alt(self, measure_idxs):
+    def plot_cellsim(self, measure_idxs):
         # Simulating cell after all parameters and field has been added
         self.cell.simulate(rec_vmem=True)
 
