@@ -1,6 +1,7 @@
 import numpy as np
 import neuron
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib
 import LFPy
 import os
@@ -133,10 +134,10 @@ class ExternalPotentialSim:
         # Defining figure frame and parameters
         fig = plt.figure(figsize=[18, 8])
         fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
-                            top=0.97, bottom=0.1)
+                            top=0.9, bottom=0.1)
 
         # Adding axes with appropriate parameters
-        ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.97], aspect=1, frameon=False,
+        ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.90], aspect=1, frameon=False,
                             xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
 
         # Names of different neuron parts and color codings for each
@@ -203,14 +204,13 @@ class ExternalPotentialSim:
                 v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
 
         vmax = np.max(np.abs(v_field_ext)) / 5
-        plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-                   origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
+        ax_cb = plt.gca()
+        im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+                            origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
 
-        plt.colorbar(label='mV')
-        # [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
-        #  for idx in range(self.cell.totnsegs)]
-        # [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
-        #  for idx in cell_plot_idxs]
+        divider = make_axes_locatable(ax_cb)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im_p, cax=cax, label='mV')
 
         ax_top = 0.97
         ax_h = 0.30
