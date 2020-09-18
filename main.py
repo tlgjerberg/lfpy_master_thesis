@@ -120,6 +120,20 @@ class ExternalPotentialSim:
 
         self.cell.insert_v_ext(v_cell_ext, t)
 
+    def _find_stable_state(self):
+        v_ss = np.max(self.cell.vmem)
+        v_ss_idx = np.argmax(self.cell.vmem)
+
+    def _record_dist_to_electrode(self, measure_idxs):
+
+        self.reord_dist = np.zeros(len(measure_idxs))
+
+        for idx, pos in enumerate(measure_idxs):
+            measure_pos = (
+                self.cell.xmid[pos], self.cell.ymid[pos], self.cell.zmid[pos])
+            self.record_dist[idx] = np.abs(
+                measure_pos, (self.x0, self.y0, self.z0))
+
     def plot_cellsim(self, measure_idxs):
         # Simulating cell after all parameters and field has been added
         self.cell.simulate(rec_vmem=True)
@@ -195,7 +209,8 @@ class ExternalPotentialSim:
 
         # Adding external field visualization to cell morphology figure
         v_field_ext = np.zeros((50, 200))
-        xf = np.linspace(-500, 500, 50)
+        # xf = np.linspace(-500, 500, 50)
+        xf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 50)
         zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
 
         for xidx, x in enumerate(xf):
@@ -245,3 +260,9 @@ class ExternalPotentialSim:
         fig, axes = plt.subplots(4, 1, sharex=True)
 
         plt.show()
+
+    def plot_currentVdistance(self, measure_idxs):
+        self.cell.simulate(rec_vmem=True)
+
+        self._find_stable_state()
+        self._record_dist_to_electrode(measure_idxs)

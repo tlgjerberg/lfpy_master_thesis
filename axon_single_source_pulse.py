@@ -51,6 +51,7 @@ def run_ext_sim(cellsimParams, elec_params, I, positions, measure_idxs, passive=
             extPotSim.extra_cellular_stimuli(monophasic_pulse_params)
             extPotSim.plot_cellsim(measure_idxs)
 
+    # Freeing up some variables
     I = None
     pos = None
     # LFPy.cell.neuron.h("forall delete_section()")
@@ -67,12 +68,14 @@ positions = [np.array([[210, 0, 700], ], dtype=float)]
 # cellsim_Hallermann_params['cell_dist_to_top'] = 900
 
 
-run_ext_sim(cellsim_Hallermann_params,
-            monophasic_pulse_params, current_amps, positions, np.array([0, 83, 300]))
+# run_ext_sim(cellsim_Hallermann_params,
+#             monophasic_pulse_params, current_amps, positions, np.array([0, 83, 300]))
 
-run_ext_sim(cellsim_bisc_stick_params,
-            monophasic_pulse_params, current_amps, positions, np.array([0, 20, 48]))
+# run_ext_sim(cellsim_bisc_stick_params,
+#             monophasic_pulse_params, current_amps, positions, np.array([0, 20, 48]))
+axon_measure_idxs = np.array([0, 20, 48])
 
-
-# extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
-# extPotSim.plot_axialCurrent()
+extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
+extPotSim.return_cell(cell_models_folder)
+extPotSim.extra_cellular_stimuli(monophasic_pulse_params)
+extPotSim.plot_currentVdistance(axon_measure_idxs)
