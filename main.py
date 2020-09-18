@@ -126,13 +126,15 @@ class ExternalPotentialSim:
 
     def _record_dist_to_electrode(self, measure_idxs):
 
-        self.reord_dist = np.zeros(len(measure_idxs))
+        self.record_dist = np.zeros(len(measure_idxs))
 
         for idx, pos in enumerate(measure_idxs):
-            measure_pos = (
-                self.cell.xmid[pos], self.cell.ymid[pos], self.cell.zmid[pos])
-            self.record_dist[idx] = np.abs(
-                measure_pos, (self.x0, self.y0, self.z0))
+            measure_pos = np.array(
+                [self.cell.xmid[pos], self.cell.ymid[pos], self.cell.zmid[pos]])
+            self.record_dist[idx] = np.sum(np.absolute(
+                measure_pos - np.array([self.x0, self.y0, self.z0])))
+
+        print(self.record_dist)
 
     def plot_cellsim(self, measure_idxs):
         # Simulating cell after all parameters and field has been added
