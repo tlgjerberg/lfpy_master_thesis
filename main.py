@@ -132,12 +132,12 @@ class ExternalPotentialSim:
 
         # Defining figure frame and parameters
         fig = plt.figure(figsize=[18, 8])
-        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.4, right=0.96,
+        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
                             top=0.97, bottom=0.1)
 
         # Adding axes with appropriate parameters
         ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.97], aspect=1, frameon=False,
-                            xticks=[], yticks=[], ylim=[-1900, 300], xlim=[-300, 300])
+                            xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
 
         # Names of different neuron parts and color codings for each
         possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
@@ -207,8 +207,12 @@ class ExternalPotentialSim:
                    origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
 
         plt.colorbar(label='mV')
+        # [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
+        #  for idx in range(self.cell.totnsegs)]
+        # [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
+        #  for idx in cell_plot_idxs]
 
-        ax_top = 0.95
+        ax_top = 0.97
         ax_h = 0.30
         ax_w = 0.6
         ax_left = 0.3
@@ -229,7 +233,7 @@ class ExternalPotentialSim:
         [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
                     c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
 
-        # plt.show()
+        plt.show()
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
@@ -238,13 +242,6 @@ class ExternalPotentialSim:
 
     def plot_axialCurrent(self):
 
-        fig = plt.figure()
-        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.4, right=0.96,
-                            top=0.97, bottom=0.1)
-
-        ax_stick = fig.add_axes([0.1, 0.75, 0.8, 0.20], xlim=[0, 100])
-        ax_start = fig.add_axes([0.1, 0.4, 0.8, 0.20], xlim=[0, 100])
-        ax_start = fig.add_axes([0.1, 0.2, 0.8, 0.20], xlim=[0, 100])
-        ax_start = fig.add_axes([0.1, 0.0, 0.8, 0.20], xlim=[0, 100])
+        fig, axes = plt.subplots(4, 1, sharex=True)
 
         plt.show()

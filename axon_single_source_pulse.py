@@ -32,7 +32,7 @@ Improve plot_cellsim_alt for easy reading and page formatting.
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 
 
-def run_ext_sim(cellsimParams, elec_params, I, positions, passive=False):
+def run_ext_sim(cellsimParams, elec_params, I, positions, measure_idxs, passive=False):
 
     extPotSim = ExternalPotentialSim(cellsimParams)
     extPotSim.return_cell(cell_models_folder)
@@ -49,22 +49,30 @@ def run_ext_sim(cellsimParams, elec_params, I, positions, passive=False):
 
             monophasic_pulse_params['positions'] = pos
             extPotSim.extra_cellular_stimuli(monophasic_pulse_params)
-            extPotSim.plot_cellsim(np.array([0, 83, 300]))
+            extPotSim.plot_cellsim(measure_idxs)
+
+    I = None
+    pos = None
+    # LFPy.cell.neuron.h("forall delete_section()")
 
 
 # Test parameters
-current_amps = [1e4, -1e4, 5e3]  # uA
+# current_amps = [1e4, -1e4, 5e3]  # uA
 # positions = [np.array([[200, 0, -40], ], dtype=float),
 #              np.array([[200, 0, 0], ], dtype=float),
 #              np.array([[-125, 0, -880], ], dtype=float),
 #              np.array([[-230, 0, 175], ], dtype=float)]
-# current_amps = [-1e4]  # uA
-positions = [np.array([[210, 0, -40], ], dtype=float)]
-cellsim_Hallermann_params['cell_dist_to_top'] = 900
+current_amps = [-1e4]  # uA
+positions = [np.array([[210, 0, 700], ], dtype=float)]
+# cellsim_Hallermann_params['cell_dist_to_top'] = 900
 
 
 run_ext_sim(cellsim_Hallermann_params,
-            monophasic_pulse_params, current_amps, positions)
+            monophasic_pulse_params, current_amps, positions, np.array([0, 83, 300]))
+
+run_ext_sim(cellsim_bisc_stick_params,
+            monophasic_pulse_params, current_amps, positions, np.array([0, 20, 48]))
+
 
 # extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
 # extPotSim.plot_axialCurrent()

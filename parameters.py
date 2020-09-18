@@ -3,7 +3,7 @@ cortex_top = 0
 
 
 positions = np.array([[200, 0, -40], ], dtype=float)
-cell_dist_to_top = 20
+cell_dist_to_top = 200
 bisc_radius = 8
 bisc_elec_pitch = 26  # um
 np.random.seed(1234)
