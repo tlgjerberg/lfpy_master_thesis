@@ -82,7 +82,7 @@ def run_dv_pos(cellsimParams, elec_params, I, positions, measure_idxs, passive=F
             elec_abs_dists[idx], ss_pot[idx] = extPotSim.record_dist_to_electrode(
                 measure_idxs)
 
-    print(elec_abs_dists[:, 0], ss_pot)
+    # print(elec_abs_dists[:, 0], ss_pot)
 
     extPotSim.plot_potentialVdistance(elec_abs_dists[:, 0], ss_pot)
 

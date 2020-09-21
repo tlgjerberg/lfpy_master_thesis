@@ -268,5 +268,28 @@ class ExternalPotentialSim:
         plt.plot(elec_abs_dists, steady_state)
         plt.show()
 
+    def run_ext_sim(cellsimParams, elec_params, I, positions, measure_idxs, passive=False):
+
+        # extPotSim = ExternalPotentialSim(cellsimParams)
+        self.return_cell(cell_models_folder)
+
+        # Neuron activation after cell object has been created
+        if not passive:
+            neuron.h('forall insert hh')
+
+        for I in current_amps:
+
+            monophasic_pulse_params['pulse_amp'] = I
+
+            for pos in positions:
+
+                monophasic_pulse_params['positions'] = pos
+                extPotSim.extra_cellular_stimuli(monophasic_pulse_params)
+                extPotSim.plot_cellsim(measure_idxs)
+
+        # Freeing up some variables
+        I = None
+        pos = None
+
         # self._find_steady_state()
         # self.record_dist_to_electrode(measure_idxs)
