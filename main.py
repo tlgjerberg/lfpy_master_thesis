@@ -120,11 +120,14 @@ class ExternalPotentialSim:
 
         self.cell.insert_v_ext(v_cell_ext, t)
 
-    def _find_stable_state(self):
-        v_ss = np.max(self.cell.vmem)
-        v_ss_idx = np.argmax(self.cell.vmem)
+    def run_cell_simulation(self):
+        self.cell.simulate(rec_vmem=True)
 
-    def _record_dist_to_electrode(self, measure_idxs):
+    def _find_steady_state(self):
+        self.v_ss = np.max(self.cell.vmem)
+        self.v_ss_idx = np.argmax(self.cell.vmem)
+
+    def record_dist_to_electrode(self, measure_idxs):
 
         self.record_dist = np.zeros(len(measure_idxs))
 
@@ -133,12 +136,15 @@ class ExternalPotentialSim:
                 [self.cell.xmid[pos], self.cell.ymid[pos], self.cell.zmid[pos]])
             self.record_dist[idx] = np.sum(np.absolute(
                 measure_pos - np.array([self.x0, self.y0, self.z0])))
+            self._find_steady_state()
 
-        print(self.record_dist)
+        return self.record_dist, self.v_ss
+
+        # print(self.record_dist)
 
     def plot_cellsim(self, measure_idxs):
         # Simulating cell after all parameters and field has been added
-        self.cell.simulate(rec_vmem=True)
+        # self.cell.simulate(rec_vmem=True)
 
         cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
@@ -257,15 +263,10 @@ class ExternalPotentialSim:
         fig.savefig(join(
             self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
 
-    def plot_axialCurrent(self):
+    def plot_potentialVdistance(self, elec_abs_dists, steady_state):
 
-        fig, axes = plt.subplots(4, 1, sharex=True)
-
+        plt.plot(elec_abs_dists, steady_state)
         plt.show()
 
-    def plot_currentVdistance(self, measure_idxs):
-        self.cell.simulate(rec_vmem=True)
-
-        for idx in range(len())
-        self._find_stable_state()
-        self._record_dist_to_electrode(measure_idxs)
+        # self._find_steady_state()
+        # self.record_dist_to_electrode(measure_idxs)
