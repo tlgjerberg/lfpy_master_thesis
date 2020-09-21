@@ -1,1 +1,1 @@
-../HallermannEtAl2012//Kv7.mod
+../HallermannEtAl2012/Kv7.mod

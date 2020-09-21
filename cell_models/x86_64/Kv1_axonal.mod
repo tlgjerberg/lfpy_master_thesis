@@ -1,1 +1,1 @@
-../HallermannEtAl2012//Kv1_axonal.mod
+../HallermannEtAl2012/Kv1_axonal.mod

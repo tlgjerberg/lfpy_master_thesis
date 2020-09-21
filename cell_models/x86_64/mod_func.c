@@ -19,17 +19,17 @@ void modl_reg(){
   if (!nrn_nobanner_) if (nrnmpi_myid < 1) {
     fprintf(stderr, "Additional mechanisms from files\n");
 
-    fprintf(stderr," HallermannEtAl2012//Cad.mod");
-    fprintf(stderr," HallermannEtAl2012//CaH.mod");
-    fprintf(stderr," HallermannEtAl2012//CaT.mod");
-    fprintf(stderr," HallermannEtAl2012//charge.mod");
-    fprintf(stderr," HallermannEtAl2012//h.mod");
-    fprintf(stderr," HallermannEtAl2012//Kca.mod");
-    fprintf(stderr," HallermannEtAl2012//Kv1_axonal.mod");
-    fprintf(stderr," HallermannEtAl2012//Kv7.mod");
-    fprintf(stderr," HallermannEtAl2012//Kv.mod");
-    fprintf(stderr," HallermannEtAl2012//na8st.mod");
-    fprintf(stderr," HallermannEtAl2012//nax8st.mod");
+    fprintf(stderr," HallermannEtAl2012/Cad.mod");
+    fprintf(stderr," HallermannEtAl2012/CaH.mod");
+    fprintf(stderr," HallermannEtAl2012/CaT.mod");
+    fprintf(stderr," HallermannEtAl2012/charge.mod");
+    fprintf(stderr," HallermannEtAl2012/h.mod");
+    fprintf(stderr," HallermannEtAl2012/Kca.mod");
+    fprintf(stderr," HallermannEtAl2012/Kv1_axonal.mod");
+    fprintf(stderr," HallermannEtAl2012/Kv7.mod");
+    fprintf(stderr," HallermannEtAl2012/Kv.mod");
+    fprintf(stderr," HallermannEtAl2012/na8st.mod");
+    fprintf(stderr," HallermannEtAl2012/nax8st.mod");
     fprintf(stderr, "\n");
   }
   _Cad_reg();

@@ -1,1 +1,1 @@
-../HallermannEtAl2012//na8st.mod
+../HallermannEtAl2012/na8st.mod

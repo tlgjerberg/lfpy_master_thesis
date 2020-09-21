@@ -1,1 +1,1 @@
-../HallermannEtAl2012//Kca.mod
+../HallermannEtAl2012/Kca.mod
