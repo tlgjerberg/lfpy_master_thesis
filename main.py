@@ -266,5 +266,6 @@ class ExternalPotentialSim:
     def plot_currentVdistance(self, measure_idxs):
         self.cell.simulate(rec_vmem=True)
 
+        for idx in range(len())
         self._find_stable_state()
         self._record_dist_to_electrode(measure_idxs)
