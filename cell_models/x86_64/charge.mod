@@ -1,1 +1,1 @@
-../HallermannEtAl2012//charge.mod
+../HallermannEtAl2012/charge.mod

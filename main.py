@@ -1,6 +1,7 @@
 import numpy as np
 import neuron
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib
 import LFPy
 import os
@@ -13,10 +14,10 @@ class ExternalPotentialSim:
 
     def __init__(self, cell_params):
 
-        # root_folder = os.path.abspath(join(os.path.dirname(__file__), '..'))
+        root_folder = os.path.dirname(__file__)
 
         self.cell_params = cell_params
-        self.save_folder = cell_params['save_folder_name']
+        self.save_folder = join(root_folder, cell_params['save_folder_name'])
         self.dt = cell_params['dt']
         self.tstop = cell_params['tstop']
         self.cut_off = cell_params["cut_off"]
@@ -119,71 +120,41 @@ class ExternalPotentialSim:
 
         self.cell.insert_v_ext(v_cell_ext, t)
 
-    def plot_cellsim(self):
-        # Simulating cell after all parameters and field has been added
-        self.cell.simulate(rec_vmem=True)
+    def _find_stable_state(self):
+        v_ss = np.max(self.cell.vmem)
+        v_ss_idx = np.argmax(self.cell.vmem)
 
-        # Setting cell compartments to measure AP
-        cell_plot_idxs = [0, int(self.cell.totnsegs / 2),
-                          self.cell.totnsegs - 1]
-        cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
-            1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
+    def _record_dist_to_electrode(self, measure_idxs):
 
-        plt.figure(figsize=(16, 9))
+        self.record_dist = np.zeros(len(measure_idxs))
 
-        v_field_ext = np.zeros((50, 200))
-        xf = np.linspace(-500, 500, 50)
-        zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        for idx, pos in enumerate(measure_idxs):
+            measure_pos = np.array(
+                [self.cell.xmid[pos], self.cell.ymid[pos], self.cell.zmid[pos]])
+            self.record_dist[idx] = np.sum(np.absolute(
+                measure_pos - np.array([self.x0, self.y0, self.z0])))
 
-        for xidx, x in enumerate(xf):
+        print(self.record_dist)
 
-            for zidx, z in enumerate(zf):
-                v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
-
-        vmax = np.max(np.abs(v_field_ext)) / 5
-        plt.subplots_adjust(hspace=0.5)
-        plt.subplot(121, aspect='equal', xlabel='x [$\mu m$]', ylabel='y [$\mu m$]',
-                    xlim=[-500, 500], xticks=[-500, 0, 500], title='Green dots: Measurement points')
-        plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-                   origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
-
-        plt.colorbar(label='mV')
-        [plt.plot([self.cell.xstart[idx], self.cell.xend[idx]], [self.cell.zstart[idx], self.cell.zend[idx]], c='gray', zorder=1)
-         for idx in range(self.cell.totnsegs)]
-        [plt.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o', c=cell_plot_colors[idx], ms=12)
-         for idx in cell_plot_idxs]
-
-        l, = plt.plot(self.x0, self.z0, 'y*', ms=2)
-        plt.legend([l], ["point current source"], frameon=False)
-
-        # Plotting the membrane potentials
-        plt.subplot(222, title='Membrane potential',
-                    xlabel='Time [ms]', ylabel='mV', ylim=[-80, 20])
-        [plt.plot(self.cell.tvec, self.cell.vmem[idx, :], c=cell_plot_colors[idx], lw=2)
-         for idx in cell_plot_idxs]
-
-        ax1 = plt.subplot(224, ylim=[-2 * np.max(np.abs(self.pulse / 1000)), 2 * np.max(np.abs(self.pulse / 1000))],
-                          ylabel='$\mu$A', title='Injected current')
-        ax1.plot(self.cell.tvec, self.pulse / 1000)
-        plt.show()
-
-    def plot_cellsim_alt(self, measure_idxs):
+    def plot_cellsim(self, measure_idxs):
         # Simulating cell after all parameters and field has been added
         self.cell.simulate(rec_vmem=True)
 
         cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
-        cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
-            1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
+        # cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
+        #     1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
+        cell_plot_colors = idx_clr = {idx: [
+            'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(cell_plot_idxs)}
 
         # Defining figure frame and parameters
         fig = plt.figure(figsize=[18, 8])
-        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.4, right=0.96,
-                            top=0.97, bottom=0.1)
+        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
+                            top=0.9, bottom=0.1)
 
         # Adding axes with appropriate parameters
-        ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.97], aspect=1, frameon=False,
-                            xticks=[], yticks=[], ylim=[-1900, 300], xlim=[-300, 300])
+        ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.90], aspect=1, frameon=False,
+                            xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
 
         # Names of different neuron parts and color codings for each
         possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
@@ -240,7 +211,8 @@ class ExternalPotentialSim:
 
         # Adding external field visualization to cell morphology figure
         v_field_ext = np.zeros((50, 200))
-        xf = np.linspace(-500, 500, 50)
+        # xf = np.linspace(-500, 500, 50)
+        xf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 50)
         zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
 
         for xidx, x in enumerate(xf):
@@ -249,12 +221,15 @@ class ExternalPotentialSim:
                 v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
 
         vmax = np.max(np.abs(v_field_ext)) / 5
-        plt.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-                   origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
+        ax_cb = plt.gca()
+        im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+                            origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
 
-        plt.colorbar(label='mV')
+        divider = make_axes_locatable(ax_cb)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im_p, cax=cax, label='mV')
 
-        ax_top = 0.95
+        ax_top = 0.97
         ax_h = 0.30
         ax_w = 0.6
         ax_left = 0.3
@@ -275,6 +250,21 @@ class ExternalPotentialSim:
         [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
                     c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
 
-        # plt.show()
-        plt.savefig(join(
+        plt.show()
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        fig.savefig(join(
             self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
+
+    def plot_axialCurrent(self):
+
+        fig, axes = plt.subplots(4, 1, sharex=True)
+
+        plt.show()
+
+    def plot_currentVdistance(self, measure_idxs):
+        self.cell.simulate(rec_vmem=True)
+
+        self._find_stable_state()
+        self._record_dist_to_electrode(measure_idxs)

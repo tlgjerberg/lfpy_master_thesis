@@ -1,1 +1,1 @@
-../HallermannEtAl2012//h.mod
+../HallermannEtAl2012/h.mod
