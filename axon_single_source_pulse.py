@@ -57,6 +57,15 @@ def run_ext_sim(cellsimParams, elec_params, I, positions, measure_idxs, passive=
     # LFPy.cell.neuron.h("forall delete_section()")
 
 
+def run_dv_pos():
+    extPotSim = ExternalPotentialSim(cellsimParams)
+    extPotSim.return_cell(cell_models_folder)
+
+    # Neuron activation after cell object has been created
+    if not passive:
+        neuron.h('forall insert hh')
+
+
 # Test parameters
 # current_amps = [1e4, -1e4, 5e3]  # uA
 # positions = [np.array([[200, 0, -40], ], dtype=float),
