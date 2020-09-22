@@ -73,10 +73,5 @@ current_amps = [-1e4]  # uA
 #             monophasic_pulse_params, current_amps, positions, np.array([0, 20, 48]))
 axon_measure_idxs = np.array([0, 20, 48])
 
-# extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
-# extPotSim.return_cell(cell_models_folder)
-# extPotSim.extra_cellular_stimuli(monophasic_pulse_params)
-# extPotSim.plot_currentVdistance(axon_measure_idxs)
-
 run_dv_pos(cellsim_bisc_stick_params,
            monophasic_pulse_params, current_amps, positions, np.array([0, 20, 48]))
