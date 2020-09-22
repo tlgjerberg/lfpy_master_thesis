@@ -22,4 +22,4 @@ positions = [np.array([[200, 0, -40], ], dtype=float),
              np.array([[-230, 0, 175], ], dtype=float)]
 
 extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
-                      positions, np.array([0, 83, 300]))
+                      positions, np.array([0, 83, 300]), 5)

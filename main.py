@@ -94,8 +94,8 @@ class ExternalPotentialSim:
         # Electrode position
         self.x0, self.y0, self.z0 = elec_params['positions'][0]
         sigma = elec_params['sigma']
-        start_time = elec_params['start_time']
-        stop_time = elec_params['stop_time']
+        self.start_time = elec_params['start_time']
+        self.stop_time = elec_params['stop_time']
 
         # Calculating external field function
         self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
@@ -109,8 +109,8 @@ class ExternalPotentialSim:
 
         # Setting pulse change at a given time interval
         self.pulse = np.zeros(n_tsteps)
-        start_idx = np.argmin(np.abs(t - start_time))
-        stop_idx = np.argmin(np.abs(t - stop_time))
+        start_idx = np.argmin(np.abs(t - self.start_time))
+        stop_idx = np.argmin(np.abs(t - self.stop_time))
         self.pulse[start_idx:stop_idx] = elec_params['pulse_amp']
 
         # Applying the external field function to the cell simulation
@@ -256,7 +256,7 @@ class ExternalPotentialSim:
         [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
                     c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
 
-        plt.show()
+        # plt.show()
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
@@ -265,27 +265,45 @@ class ExternalPotentialSim:
 
     def plot_potentialVdistance(self, elec_abs_dists, steady_state):
 
-        plt.plot(elec_abs_dists, steady_state)
-        plt.show()
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Electrode Distance ($\mu m$)')
+        ax.set_ylabel('Steady State Potential (mV)')
+        ax.plot(elec_abs_dists, steady_state)
 
-    def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, passive=False):
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        plt.savefig(join(self.save_folder, 'potential_electrode_distance.png'))
+        # plt.show()
+
+    def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
 
         self.return_cell(cell_models_folder)
+
+        elec_abs_dists = np.zeros((len(positions), 3))
+        ss_pot = np.zeros(len(positions))
 
         # Neuron activation after cell object has been created
         if not passive:
             neuron.h('forall insert hh')
 
+        self.stop_time = stop_time
+
         for I in current_amps:
 
             elec_params['pulse_amp'] = I
 
-            for pos in positions:
+            for idx, pos in enumerate(positions):
 
                 elec_params['positions'] = pos
                 self.extra_cellular_stimuli(elec_params)
                 self.run_cell_simulation()
                 self.plot_cellsim(measure_idxs)
+
+                elec_abs_dists[idx], ss_pot[idx] = self.record_dist_to_electrode(
+                    measure_idxs)
+
+        self.plot_potentialVdistance(elec_abs_dists[:, 0], ss_pot)
 
         # Freeing up some variables
         I = None

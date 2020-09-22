@@ -4,7 +4,6 @@ positions = np.array([[200, 0, -40], ], dtype=float)
 cell_dist_to_top = 200
 bisc_radius = 8
 bisc_elec_pitch = 26  # um
-np.random.seed(1234)
 
 monophasic_pulse_params = dict(
     pulse_onset=5,
