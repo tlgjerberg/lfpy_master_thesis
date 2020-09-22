@@ -151,8 +151,6 @@ class ExternalPotentialSim:
         if not passive:
             neuron.h('forall insert hh')
 
-        self.stop_time = stop_time
-
         for I in current_amps:
 
             elec_params['pulse_amp'] = I
@@ -249,9 +247,10 @@ class ExternalPotentialSim:
         # Adding external field visualization to cell morphology figure
         v_field_ext = np.zeros((100, 200))
         xf = np.linspace(-500, 500, 100)
+        zf = np.linspace(-500, 1000, 200)
         # print(self.cell.xend)
         # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
-        zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
 
         for xidx, x in enumerate(xf):
 
@@ -267,7 +266,7 @@ class ExternalPotentialSim:
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im_p, cax=cax, label='mV')
 
-        ax_top = 0.97
+        ax_top = 0.90
         ax_h = 0.30
         ax_w = 0.6
         ax_left = 0.3
@@ -298,12 +297,13 @@ class ExternalPotentialSim:
     def plot_potentialVdistance(self, elec_abs_dists, steady_state):
 
         fig, ax = plt.subplots()
-        ax.set_xlabel('Electrode Distance ($\mu m$)')
+        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
         ax.set_ylabel('Steady State Potential (mV)')
         ax.plot(elec_abs_dists, steady_state, '-o')
 
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
-        plt.savefig(join(self.save_folder, 'potential_electrode_distance.png'))
+        plt.savefig(
+            join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
         # plt.show()
