@@ -32,12 +32,12 @@ cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 
 # Test parameters
 # current_amps = [1e4, -1e4, 5e3]  # uA
-positions = [np.array([[200, 0, -40], ], dtype=float),
-             np.array([[200, 0, 0], ], dtype=float),
-             np.array([[-125, 0, -880], ], dtype=float),
-             np.array([[-230, 0, 175], ], dtype=float)]
+# positions = [np.array([[200, 0, -40], ], dtype=float),
+#              np.array([[200, 0, 0], ], dtype=float),
+#              np.array([[-125, 0, -880], ], dtype=float),
+#              np.array([[-230, 0, 175], ], dtype=float)]
 current_amps = [-1e4]  # uA
-# positions = [np.array([[210, 0, 700], ], dtype=float)]
+positions = [np.array([[210, 0, 700], ], dtype=float)]
 
 axon_measure_idxs = np.array([0, 20, 48])
 

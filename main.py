@@ -144,7 +144,7 @@ class ExternalPotentialSim:
 
         self.return_cell(cell_models_folder)
 
-        elec_abs_dists = np.zeros((len(positions), 3))
+        elec_abs_dists = np.zeros((len(positions), len(measure_idxs)))
         ss_pot = np.zeros(len(positions))
 
         # Neuron activation after cell object has been created
@@ -247,9 +247,10 @@ class ExternalPotentialSim:
                                     height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
         # Adding external field visualization to cell morphology figure
-        v_field_ext = np.zeros((50, 200))
-        # xf = np.linspace(-500, 500, 50)
-        xf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 50)
+        v_field_ext = np.zeros((100, 200))
+        xf = np.linspace(-500, 500, 100)
+        # print(self.cell.xend)
+        # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
         zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
 
         for xidx, x in enumerate(xf):
@@ -299,7 +300,7 @@ class ExternalPotentialSim:
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance ($\mu m$)')
         ax.set_ylabel('Steady State Potential (mV)')
-        ax.plot(elec_abs_dists, steady_state)
+        ax.plot(elec_abs_dists, steady_state, '-o')
 
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
