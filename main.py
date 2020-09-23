@@ -126,8 +126,10 @@ class ExternalPotentialSim:
     def _find_steady_state(self):
         self.v_ss = np.max(self.cell.vmem)
         self.v_ss_idx = np.argmax(self.cell.vmem)
+        plateau = np.diff(self.cell.vmem)
+        print(plateau, self.v_ss_idx)
 
-    def record_dist_to_electrode(self, measure_idxs):
+    def _record_dist_to_electrode(self, measure_idxs):
 
         self.record_dist = np.zeros(len(measure_idxs))
 
@@ -139,6 +141,21 @@ class ExternalPotentialSim:
             self._find_steady_state()
 
         return self.record_dist, self.v_ss
+
+    def calc_time_constant(self):
+
+        pass
+
+    def return_axial_current(self, timepoints):
+
+        ax_current = self.cell.get_axial_currents_from_vmem(
+            timepoints=timepoints)
+
+        ax_res = self.cell.get_axial_resitance()
+
+        for t in timepoints:
+
+            self.cell.vmem[t]
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
 
@@ -162,7 +179,7 @@ class ExternalPotentialSim:
                 self.run_cell_simulation()
                 self.plot_cellsim(measure_idxs)
 
-                elec_abs_dists[idx], ss_pot[idx] = self.record_dist_to_electrode(
+                elec_abs_dists[idx], ss_pot[idx] = self._record_dist_to_electrode(
                     measure_idxs)
 
         self.plot_potentialVdistance(elec_abs_dists[:, 0], ss_pot)
@@ -307,3 +324,7 @@ class ExternalPotentialSim:
         plt.savefig(
             join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
         # plt.show()
+
+    def plot_axial(self, timepoints):
+
+    pass
