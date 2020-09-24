@@ -45,6 +45,7 @@ class ExternalPotentialSim:
             }
             cell = LFPy.Cell(**cell_parameters)
             self.cell = cell
+            self.v_init = cell_parameters['v_init']
 
         elif self.cell_name == 'Hallermann':
             model_path = join(cell_models_folder, 'HallermannEtAl2012')
@@ -76,6 +77,7 @@ class ExternalPotentialSim:
             }
             cell = LFPy.Cell(**cell_parameters)
             self.cell = cell
+            self.v_init = cell_parameters['v_init']
 
             # cell.set_pos(z=-np.max(cell.zend) -
             #              self.cell_dist_to_top, x=self.x_shift)
@@ -128,6 +130,10 @@ class ExternalPotentialSim:
         self.v_ss_idx = np.argmax(self.cell.vmem)
         find_diff = np.diff(self.cell.vmem)
 
+    def _dV(self):
+        self._find_steady_state()
+        self.dV = self.v_ss - self.v_init
+
     def _record_dist_to_electrode(self, measure_idxs):
 
         self.record_dist = np.zeros(len(measure_idxs))
@@ -137,9 +143,8 @@ class ExternalPotentialSim:
                 [self.cell.xmid[pos], self.cell.ymid[pos], self.cell.zmid[pos]])
             self.record_dist[idx] = np.sum(np.absolute(
                 measure_pos - np.array([self.x0, self.y0, self.z0])))
-            self._find_steady_state()
 
-        return self.record_dist, self.v_ss
+        return self.record_dist
 
     def calc_time_constant(self):
 
@@ -164,8 +169,9 @@ class ExternalPotentialSim:
 
         self.return_cell(cell_models_folder)
 
-        elec_abs_dists = np.zeros((len(positions), len(measure_idxs)))
+        elec_dists = np.zeros((len(positions), len(measure_idxs)))
         ss_pot = np.zeros(len(positions))
+        dV = np.zeros(len(positions))
 
         # Neuron activation after cell object has been created
         if not passive:
@@ -181,11 +187,14 @@ class ExternalPotentialSim:
                 self.extra_cellular_stimuli(elec_params)
                 self.run_cell_simulation()
                 self.plot_cellsim(measure_idxs)
+                self._find_steady_state()
+                ss_pot[idx] = self.v_ss
+                self._dV()
+                dV[idx] = self.dV
+                elec_dists[idx] = self._record_dist_to_electrode(measure_idxs)
 
-                elec_abs_dists[idx], ss_pot[idx] = self._record_dist_to_electrode(
-                    measure_idxs)
-
-        self.plot_potentialVdistance(elec_abs_dists[:, 0], ss_pot)
+        self.plot_steady_state(elec_dists[:, 0], ss_pot)
+        self.plot_dV(elec_dists[:, 0], dV)
 
         # Freeing up some variables
         I = None
@@ -314,7 +323,7 @@ class ExternalPotentialSim:
         fig.savefig(join(
             self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
 
-    def plot_potentialVdistance(self, elec_abs_dists, steady_state):
+    def plot_steady_state(self, elec_abs_dists, steady_state):
 
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
@@ -327,6 +336,22 @@ class ExternalPotentialSim:
         plt.savefig(
             join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
         # plt.show()
+
+    def plot_dV(self, elec_dists, dV):
+
+        elec_dists = np.log(elec_dists)
+        dV = np.log(dV)
+
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
+        ax.set_ylabel('dV (mV)')
+        ax.plot(elec_dists, dV, '-o')
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        plt.savefig(
+            join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
 
     def plot_axial_currents(self, timepoints):
 
