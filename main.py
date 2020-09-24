@@ -109,9 +109,9 @@ class ExternalPotentialSim:
 
         # Setting pulse change at a given time interval
         self.pulse = np.zeros(n_tsteps)
-        start_idx = np.argmin(np.abs(t - self.start_time))
-        stop_idx = np.argmin(np.abs(t - self.stop_time))
-        self.pulse[start_idx:stop_idx] = elec_params['pulse_amp']
+        self.start_idx = np.argmin(np.abs(t - self.start_time))
+        self.stop_idx = np.argmin(np.abs(t - self.stop_time))
+        self.pulse[self.start_idx:self.stop_idx] = elec_params['pulse_amp']
 
         # Applying the external field function to the cell simulation
         v_cell_ext = np.zeros((self.cell.totnsegs, n_tsteps))
@@ -126,8 +126,7 @@ class ExternalPotentialSim:
     def _find_steady_state(self):
         self.v_ss = np.max(self.cell.vmem)
         self.v_ss_idx = np.argmax(self.cell.vmem)
-        plateau = np.diff(self.cell.vmem)
-        print(plateau, self.v_ss_idx)
+        find_diff = np.diff(self.cell.vmem)
 
     def _record_dist_to_electrode(self, measure_idxs):
 
@@ -146,16 +145,20 @@ class ExternalPotentialSim:
 
         pass
 
-    def return_axial_current(self, timepoints):
+    def return_axial_current(self, measure_idxs):
+
+        self.mid_idx = (self.stop_idx - self.start_idx) // 2
+
+        timepoints = np.array([self.start_idx, self.mid_idx, self.stop_idx])
 
         ax_current = self.cell.get_axial_currents_from_vmem(
             timepoints=timepoints)
 
-        ax_res = self.cell.get_axial_resitance()
+        # ax_res = self.cell.get_axial_resitance()
 
-        for t in timepoints:
-
-            self.cell.vmem[t]
+        # for t in timepoints:
+        #
+        #     self.cell.vmem[t]
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
 
@@ -325,6 +328,66 @@ class ExternalPotentialSim:
             join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
         # plt.show()
 
-    def plot_axial(self, timepoints):
+    def plot_axial_currents(self, timepoints):
 
-    pass
+        cell_plot_idxs = measure_idxs.astype(
+            dtype='int')  # List of measurement points
+        # cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
+        #     1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
+        cell_plot_colors = idx_clr = {idx: [
+            'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(cell_plot_idxs)}
+
+        # Defining figure frame and parameters
+        fig = plt.figure(figsize=[18, 8])
+        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
+                            top=0.9, bottom=0.1)
+
+        # Adding axes with appropriate parameters
+        ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.90], aspect=1, frameon=False,
+                            xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
+
+        # Names of different neuron parts and color codings for each
+        possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
+                          "hill", "apic", "dend", "soma"]
+        sec_clrs = {"Myelin": 'olive',
+                    "dend": '0.3',
+                    "soma": 'k',
+                    'apic': '0.6',
+                    "axon": 'lightgreen',
+                    "Unmyelin": 'salmon',
+                    "Node": 'r',
+                    "hilloc": 'lightblue',
+                    "hill": 'pink', }
+        used_clrs = []
+
+        # PLOTTING CELL MORPHOLOGY
+
+        # Sets each segment to the color matching the name set by sec_clrs
+        for idx in range(self.cell.totnsegs):
+            sec_name = self.cell.get_idx_name(idx)[1]
+            # print(sec_name)
+            # c = 'k'
+            for ax_name in possible_names:
+                if ax_name in sec_name:
+                    # print(ax_name, sec_name)
+                    c = sec_clrs[ax_name]
+                    if not ax_name in used_clrs:
+                        used_clrs.append(ax_name)
+
+            ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
+                      [self.cell.zstart[idx], self.cell.zend[idx]], '-',
+                      c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)
+
+        lines = []
+        for name in used_clrs:
+            l, = ax_m.plot([0], [0], lw=2, c=sec_clrs[name])
+            lines.append(l)
+        ax_m.legend(lines, used_clrs, frameon=False,
+                    fontsize=8, loc=(0.05, 0.0), ncol=2)
+
+        # Plotting dots at the middle of a given section in its given color
+        [ax_m.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o',
+                   c=cell_plot_colors[idx], ms=13) for idx in cell_plot_idxs]
+
+        ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
+                  fontsize=9, ha='center')
