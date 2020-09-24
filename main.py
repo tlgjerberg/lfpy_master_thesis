@@ -123,7 +123,7 @@ class ExternalPotentialSim:
         self.cell.insert_v_ext(v_cell_ext, t)
 
     def run_cell_simulation(self):
-        self.cell.simulate(rec_vmem=True)
+        self.cell.simulate(rec_vmem=True, rec_imem=True)
 
     def _find_steady_state(self):
         self.v_ss = np.max(self.cell.vmem)
@@ -146,19 +146,28 @@ class ExternalPotentialSim:
 
         return self.record_dist
 
-    def calc_time_constant(self):
-
+    def find_time_constant(self):
         pass
 
-    def return_axial_current(self, measure_idxs):
+    def return_axial_current(self):
 
-        self.mid_idx = (self.stop_idx - self.start_idx) // 2
+        self.mid_idx = (self.stop_idx - self.start_idx)
 
         timepoints = np.array([self.start_idx, self.mid_idx, self.stop_idx])
+        print(timepoints)
 
         ax_current = self.cell.get_axial_currents_from_vmem(
             timepoints=timepoints)
 
+        print(ax_current[0].shape, ax_current[1].shape, ax_current[2].shape)
+        ax_current = np.zeros(len(timepoints))
+
+        print(self.cell.imem.shape)
+
+        for idx, t in enumerate(timepoints):
+            ax_current[idx] = self.cell.imem[:, t]
+
+        print(ax_current)
         # ax_res = self.cell.get_axial_resitance()
 
         # for t in timepoints:
@@ -186,6 +195,7 @@ class ExternalPotentialSim:
                 elec_params['positions'] = pos
                 self.extra_cellular_stimuli(elec_params)
                 self.run_cell_simulation()
+                self.return_axial_current()
                 self.plot_cellsim(measure_idxs)
                 self._find_steady_state()
                 ss_pot[idx] = self.v_ss
