@@ -6,6 +6,7 @@ import matplotlib
 import LFPy
 import os
 import sys
+import time
 from os.path import join
 from matplotlib.patches import Ellipse
 np.set_printoptions(threshold=sys.maxsize)
@@ -302,13 +303,7 @@ class ExternalPotentialSim:
             ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
                                     height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
-    def plot_cellsim(self, measure_idxs):
-        # Simulating cell after all parameters and field has been added
-        # self.cell.simulate(rec_vmem=True)
-        self.fig = plt.figure(figsize=[18, 8])
-
-        self.plot_morphology(measure_idxs)
-
+    def plot_external_field(self):
         # Adding external field visualization to cell morphology figure
         v_field_ext = np.zeros((100, 200))
         xf = np.linspace(-500, 500, 100)
@@ -333,6 +328,7 @@ class ExternalPotentialSim:
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im_p, cax=cax, label='mV')
 
+    def plot_membrane_potential(self):
         ax_top = 0.90
         ax_h = 0.30
         ax_w = 0.6
@@ -345,14 +341,31 @@ class ExternalPotentialSim:
 
         # if type(self.spike_time_idxs) == int:
         #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
+
+        # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
+        [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
+                    c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
+
+    def plot_current_pulse(self):
+        ax_top = 0.90
+        ax_h = 0.30
+        ax_w = 0.6
+        ax_left = 0.3
+
         ax_stim = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
                                     ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
         # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
         ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
 
-        # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
-        [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
-                    c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
+    def plot_cellsim(self, measure_idxs):
+        # Simulating cell after all parameters and field has been added
+        # self.cell.simulate(rec_vmem=True)
+        self.fig = plt.figure(figsize=[18, 8])
+
+        self.plot_morphology(measure_idxs)
+        self.plot_external_field()
+        self.plot_membrane_potential()
+        self.plot_current_pulse()
 
         # plt.show()
         if not os.path.isdir(self.save_folder):
@@ -360,54 +373,6 @@ class ExternalPotentialSim:
 
         self.fig.savefig(join(
             self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
-        # v_field_ext = np.zeros((100, 200))
-        # xf = np.linspace(-500, 500, 100)
-        # zf = np.linspace(-500, 1000, 200)
-        # # print(self.cell.xend)
-        # # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
-        # # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
-        #
-        # for xidx, x in enumerate(xf):
-        #
-        #     for zidx, z in enumerate(zf):
-        #         v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
-        #
-        # vmax = np.max(np.abs(v_field_ext)) / 5
-        # ax_cb = plt.gca()
-        # im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-        #                     origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
-        #
-        # divider = make_axes_locatable(ax_cb)
-        # cax = divider.append_axes("right", size="5%", pad=0.05)
-        # plt.colorbar(im_p, cax=cax, label='mV')
-        #
-        # ax_top = 0.90
-        # ax_h = 0.30
-        # ax_w = 0.6
-        # ax_left = 0.3
-        #
-        # ax_vm = fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
-        #                      xlim=[0, self.tstop], xlabel="Time (ms)")
-        #
-        # ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
-        #
-        # # if type(self.spike_time_idxs) == int:
-        # #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
-        # ax_stim = fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
-        #                        ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
-        # # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
-        # ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
-        #
-        # # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
-        # [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
-        #             c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
-        #
-        # # plt.show()
-        # if not os.path.isdir(self.save_folder):
-        #     os.makedirs(self.save_folder)
-        #
-        # fig.savefig(join(
-        #     self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
 
