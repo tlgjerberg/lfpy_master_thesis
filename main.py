@@ -165,13 +165,13 @@ class ExternalPotentialSim:
         timepoints = np.array(
             [self.start_idx + 1, self.mid_idx, self.stop_idx])
 
-        print(self.cell.tvec[self.start_idx])
+        # print(self.cell.tvec[self.start_idx])
         # plt.plot(self.cell.imem[:, self.start_idx + 1], self.cell.zmid)
         # plt.figure()
         # plt.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid)
         # plt.plot(self.cell.tvec, self.cell.imem[0, :])
         # plt.show()
-        print(timepoints)
+        # print(timepoints)
 
         ax_current, _, xyzpos = self.cell.get_axial_currents_from_vmem(
             timepoints=timepoints)
@@ -180,7 +180,7 @@ class ExternalPotentialSim:
         plt.plot(ax_current[:, 0], xyzpos[:, 2])
         plt.axvline(0, ls="--", c='grey')
         plt.xlim([-6, 6])
-        plt.show()
+        # plt.show()
         # ax_current = np.zeros(len(timepoints))
         #
         # print(self.cell.imem.size)
@@ -231,177 +231,23 @@ class ExternalPotentialSim:
         I = None
         pos = None
 
-    def plot_cellsim(self, measure_idxs):
-        # Simulating cell after all parameters and field has been added
-        # self.cell.simulate(rec_vmem=True)
-
-        self.plot_morphology(measure_idxs)
-        # cell_plot_idxs = measure_idxs.astype(
-        #     dtype='int')  # List of measurement points
-        # # cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
-        # #     1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
-        # cell_plot_colors = idx_clr = {idx: [
-        #     'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(cell_plot_idxs)}
-        #
-        # # Defining figure frame and parameters
-        # fig = plt.figure(figsize=[18, 8])
-        # fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
-        #                     top=0.9, bottom=0.1)
-        #
-        # # Adding axes with appropriate parameters
-        # ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.90], aspect=1, frameon=False,
-        #                     xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
-        #
-        # # Names of different neuron parts and color codings for each
-        # possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
-        #                   "hill", "apic", "dend", "soma"]
-        # sec_clrs = {"Myelin": 'olive',
-        #             "dend": '0.3',
-        #             "soma": 'k',
-        #             'apic': '0.6',
-        #             "axon": 'lightgreen',
-        #             "Unmyelin": 'salmon',
-        #             "Node": 'r',
-        #             "hilloc": 'lightblue',
-        #             "hill": 'pink', }
-        # used_clrs = []
-        #
-        # # PLOTTING CELL MORPHOLOGY
-        #
-        # # Sets each segment to the color matching the name set by sec_clrs
-        # for idx in range(self.cell.totnsegs):
-        #     sec_name = self.cell.get_idx_name(idx)[1]
-        #     # print(sec_name)
-        #     # c = 'k'
-        #     for ax_name in possible_names:
-        #         if ax_name in sec_name:
-        #             # print(ax_name, sec_name)
-        #             c = sec_clrs[ax_name]
-        #             if not ax_name in used_clrs:
-        #                 used_clrs.append(ax_name)
-        #
-        #     ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
-        #               [self.cell.zstart[idx], self.cell.zend[idx]], '-',
-        #               c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)
-        #
-        # lines = []
-        # for name in used_clrs:
-        #     l, = ax_m.plot([0], [0], lw=2, c=sec_clrs[name])
-        #     lines.append(l)
-        # ax_m.legend(lines, used_clrs, frameon=False,
-        #             fontsize=8, loc=(0.05, 0.0), ncol=2)
-        #
-        # # Plotting dots at the middle of a given section in its given color
-        # [ax_m.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o',
-        #            c=cell_plot_colors[idx], ms=13) for idx in cell_plot_idxs]
-        #
-        # ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
-        #           fontsize=9, ha='center')
-
-        for e_idx in range(len(self.elec_params["positions"])):
-            ellipse_pos = [self.elec_params["positions"][e_idx]
-                           [0], self.elec_params["positions"][e_idx][2]]
-
-            ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
-                                    height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
-
-        # Adding external field visualization to cell morphology figure
-        v_field_ext = np.zeros((100, 200))
-        xf = np.linspace(-500, 500, 100)
-        zf = np.linspace(-500, 1000, 200)
-        # print(self.cell.xend)
-        # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
-        # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
-
-        for xidx, x in enumerate(xf):
-
-            for zidx, z in enumerate(zf):
-                v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
-
-        vmax = np.max(np.abs(v_field_ext)) / 5
-        ax_cb = plt.gca()
-        im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-                            origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
-
-        divider = make_axes_locatable(ax_cb)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im_p, cax=cax, label='mV')
-
-        ax_top = 0.90
-        ax_h = 0.30
-        ax_w = 0.6
-        ax_left = 0.3
-
-        ax_vm = fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
-                             xlim=[0, self.tstop], xlabel="Time (ms)")
-
-        ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
-
-        # if type(self.spike_time_idxs) == int:
-        #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
-        ax_stim = fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
-                               ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
-        # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
-        ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
-
-        # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
-        [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
-                    c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
-
-        # plt.show()
-        if not os.path.isdir(self.save_folder):
-            os.makedirs(self.save_folder)
-
-        fig.savefig(join(
-            self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
-
-    def plot_steady_state(self, elec_abs_dists, steady_state):
-
-        fig, ax = plt.subplots()
-        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
-        ax.set_ylabel('Steady State Potential (mV)')
-        ax.plot(elec_abs_dists, steady_state, '-o')
-
-        if not os.path.isdir(self.save_folder):
-            os.makedirs(self.save_folder)
-
-        plt.savefig(
-            join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
-        # plt.show()
-
-    def plot_dV(self, elec_dists, dV):
-
-        elec_dists = np.log(elec_dists)
-        dV = np.log(dV)
-
-        fig, ax = plt.subplots()
-        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
-        ax.set_ylabel('dV (mV)')
-        ax.plot(elec_dists, dV, '-o')
-
-        if not os.path.isdir(self.save_folder):
-            os.makedirs(self.save_folder)
-
-        plt.savefig(
-            join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
-
     def plot_morphology(self, measure_idxs):
 
-        cell_plot_idxs = measure_idxs.astype(
+        self.cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
         # cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
         #     1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
-        cell_plot_colors = idx_clr = {idx: [
-            'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(cell_plot_idxs)}
+        self.cell_plot_colors = idx_clr = {idx: [
+            'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
         # Defining figure frame and parameters
-        fig = plt.figure(figsize=[18, 8])
-        fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
-                            top=0.9, bottom=0.1)
+        # fig = plt.figure(figsize=[18, 8])
+        self.fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
+                                 top=0.9, bottom=0.1)
 
         # Adding axes with appropriate parameters
-        ax_m = fig.add_axes([-0.01, 0.05, 0.2, 0.90], aspect=1, frameon=False,
-                            xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
+        ax_m = self.fig.add_axes([-0.01, 0.05, 0.2, 0.90], aspect=1, frameon=False,
+                                 xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
 
         # Names of different neuron parts and color codings for each
         possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
@@ -444,7 +290,151 @@ class ExternalPotentialSim:
 
         # Plotting dots at the middle of a given section in its given color
         [ax_m.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o',
-                   c=cell_plot_colors[idx], ms=13) for idx in cell_plot_idxs]
+                   c=self.cell_plot_colors[idx], ms=13) for idx in self.cell_plot_idxs]
 
         ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
                   fontsize=9, ha='center')
+
+        for e_idx in range(len(self.elec_params["positions"])):
+            ellipse_pos = [self.elec_params["positions"][e_idx]
+                           [0], self.elec_params["positions"][e_idx][2]]
+
+            ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
+                                    height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
+
+    def plot_cellsim(self, measure_idxs):
+        # Simulating cell after all parameters and field has been added
+        # self.cell.simulate(rec_vmem=True)
+        self.fig = plt.figure(figsize=[18, 8])
+
+        self.plot_morphology(measure_idxs)
+
+        # Adding external field visualization to cell morphology figure
+        v_field_ext = np.zeros((100, 200))
+        xf = np.linspace(-500, 500, 100)
+        zf = np.linspace(-500, 1000, 200)
+        # print(self.cell.xend)
+        # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
+        # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+
+        for xidx, x in enumerate(xf):
+
+            for zidx, z in enumerate(zf):
+
+                v_field_ext[xidx, zidx] = self.ext_field(
+                    x, 0, z) * self.amp
+
+        vmax = np.max(np.abs(v_field_ext)) / 5
+        ax_cb = plt.gca()
+        im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+                            origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
+
+        divider = make_axes_locatable(ax_cb)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im_p, cax=cax, label='mV')
+
+        ax_top = 0.90
+        ax_h = 0.30
+        ax_w = 0.6
+        ax_left = 0.3
+
+        ax_vm = self.fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
+                                  xlim=[0, self.tstop], xlabel="Time (ms)")
+
+        ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
+
+        # if type(self.spike_time_idxs) == int:
+        #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
+        ax_stim = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
+                                    ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
+        # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
+        ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
+
+        # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
+        [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
+                    c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
+
+        # plt.show()
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        self.fig.savefig(join(
+            self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
+        # v_field_ext = np.zeros((100, 200))
+        # xf = np.linspace(-500, 500, 100)
+        # zf = np.linspace(-500, 1000, 200)
+        # # print(self.cell.xend)
+        # # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
+        # # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        #
+        # for xidx, x in enumerate(xf):
+        #
+        #     for zidx, z in enumerate(zf):
+        #         v_field_ext[xidx, zidx] = self.ext_field(x, 0, z) * self.amp
+        #
+        # vmax = np.max(np.abs(v_field_ext)) / 5
+        # ax_cb = plt.gca()
+        # im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+        #                     origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
+        #
+        # divider = make_axes_locatable(ax_cb)
+        # cax = divider.append_axes("right", size="5%", pad=0.05)
+        # plt.colorbar(im_p, cax=cax, label='mV')
+        #
+        # ax_top = 0.90
+        # ax_h = 0.30
+        # ax_w = 0.6
+        # ax_left = 0.3
+        #
+        # ax_vm = fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
+        #                      xlim=[0, self.tstop], xlabel="Time (ms)")
+        #
+        # ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
+        #
+        # # if type(self.spike_time_idxs) == int:
+        # #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
+        # ax_stim = fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
+        #                        ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
+        # # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
+        # ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
+        #
+        # # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
+        # [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
+        #             c=cell_plot_colors[idx], lw=0.5) for idx in cell_plot_idxs]
+        #
+        # # plt.show()
+        # if not os.path.isdir(self.save_folder):
+        #     os.makedirs(self.save_folder)
+        #
+        # fig.savefig(join(
+        #     self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
+
+    def plot_steady_state(self, elec_abs_dists, steady_state):
+
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
+        ax.set_ylabel('Steady State Potential (mV)')
+        ax.plot(elec_abs_dists, steady_state, '-o')
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        plt.savefig(
+            join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
+        # plt.show()
+
+    def plot_dV(self, elec_dists, dV):
+
+        elec_dists = np.log(elec_dists)
+        dV = np.log(dV)
+
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
+        ax.set_ylabel('dV (mV)')
+        ax.plot(elec_dists, dV, '-o')
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        plt.savefig(
+            join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
