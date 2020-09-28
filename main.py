@@ -8,6 +8,7 @@ import os
 import sys
 from os.path import join
 from matplotlib.patches import Ellipse
+np.set_printoptions(threshold=sys.maxsize)
 
 
 class ExternalPotentialSim:
@@ -156,13 +157,13 @@ class ExternalPotentialSim:
         timepoints = np.array([self.start_idx, self.mid_idx, self.stop_idx])
         print(timepoints)
 
-        ax_current = self.cell.get_axial_currents_from_vmem(
-            timepoints=timepoints)
+        # ax_current = self.cell.get_axial_currents_from_vmem(
+        #     timepoints=timepoints)
+        # print(ax_current[0].shape, ax_current[1].shape, ax_current[2].shape)
 
-        print(ax_current[0].shape, ax_current[1].shape, ax_current[2].shape)
         ax_current = np.zeros(len(timepoints))
 
-        print(self.cell.imem.shape)
+        print(self.cell.imem)
 
         for idx, t in enumerate(timepoints):
             ax_current[idx] = self.cell.imem[:, t]
@@ -195,7 +196,7 @@ class ExternalPotentialSim:
                 elec_params['positions'] = pos
                 self.extra_cellular_stimuli(elec_params)
                 self.run_cell_simulation()
-                self.return_axial_current()
+                # self.return_axial_current()
                 self.plot_cellsim(measure_idxs)
                 self._find_steady_state()
                 ss_pot[idx] = self.v_ss
