@@ -159,43 +159,6 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
-    def return_axial_current(self):
-
-        self.mid_idx = (self.stop_idx + self.start_idx) // 2
-
-        timepoints = np.array(
-            [self.start_idx + 1, self.mid_idx, self.stop_idx])
-
-        # print(self.cell.tvec[self.start_idx])
-        # plt.plot(self.cell.imem[:, self.start_idx + 1], self.cell.zmid)
-        # plt.figure()
-        # plt.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid)
-        # plt.plot(self.cell.tvec, self.cell.imem[0, :])
-        # plt.show()
-        # print(timepoints)
-
-        ax_current, _, xyzpos = self.cell.get_axial_currents_from_vmem(
-            timepoints=timepoints)
-        # print(ax_current[0].shape, ax_current[1].shape, ax_current[2].shape)
-
-        plt.plot(ax_current[:, 0], xyzpos[:, 2])
-        plt.axvline(0, ls="--", c='grey')
-        plt.xlim([-6, 6])
-        # plt.show()
-        # ax_current = np.zeros(len(timepoints))
-        #
-        # print(self.cell.imem.size)
-        #
-        # for idx, t in enumerate(timepoints):
-        #     ax_current[idx] = self.cell.imem[:, t]
-        #
-        # print(ax_current)
-        # ax_res = self.cell.get_axial_resitance()
-
-        # for t in timepoints:
-        #
-        #     self.cell.vmem[t]
-
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
 
         self.return_cell(cell_models_folder)
@@ -217,7 +180,6 @@ class ExternalPotentialSim:
                 elec_params['positions'] = pos
                 self.extra_cellular_stimuli(elec_params)
                 self.run_cell_simulation()
-                self.return_axial_current()
                 self.plot_cellsim(measure_idxs)
                 self._find_steady_state()
                 ss_pot[idx] = self.v_ss
@@ -231,6 +193,17 @@ class ExternalPotentialSim:
         # Freeing up some variables
         I = None
         pos = None
+
+    def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
+        self.return_cell(cell_models_folder)
+
+        # Neuron activation after cell object has been created
+        if not passive:
+            neuron.h('forall insert hh')
+
+        self.extra_cellular_stimuli(elec_params)
+        self.run_cell_simulation()
+        self.plot_currents(measure_idxs)
 
     def plot_morphology(self, measure_idxs):
 
@@ -403,3 +376,63 @@ class ExternalPotentialSim:
 
         plt.savefig(
             join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
+
+    def plot_currents(self, measure_idxs):
+
+        self.mid_idx = (self.stop_idx + self.start_idx) // 2
+
+        # Time indices for snapshots currents
+        timepoints = np.array(
+            [self.start_idx + 1, self.mid_idx, self.stop_idx])
+
+        # print(self.cell.tvec[self.start_idx])
+        # fig_snap1, ax_snap1 = plt.subplots()
+        plt.figure()
+        plt.plot(self.cell.imem[:, self.start_idx + 1], self.cell.zmid)
+        plt.figure()
+        plt.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid)
+        plt.figure()
+        plt.plot(self.cell.tvec, self.cell.imem[0, :])
+        # plt.show()
+        # print(timepoints)
+
+        ax_current, _, pos_coord = self.cell.get_axial_currents_from_vmem(
+            timepoints=timepoints)
+        # print(ax_current[0].shape, ax_current[1].shape, ax_current[2].shape)
+        plt.figure()
+        plt.plot(ax_current[:, 0], pos_coord[:, 2])
+        plt.axvline(0, ls="--", c='grey')
+        plt.xlim([-6, 6])
+
+        # plt.show()
+        # ax_current = np.zeros(len(timepoints))
+        #
+        # print(self.cell.imem.size)
+        #
+        # for idx, t in enumerate(timepoints):
+        #     ax_current[idx] = self.cell.imem[:, t]
+        #
+        # print(ax_current)
+        # ax_res = self.cell.get_axial_resitance()
+
+        # for t in timepoints:
+        #
+        #     self.cell.vmem[t]
+
+        self.fig = plt.figure(figsize=[18, 8])
+
+        self.plot_morphology(measure_idxs)
+        self.plot_external_field()
+
+        ax_top = 0.90
+        ax_h = 0.30
+        ax_w = 0.6
+        ax_left = 0.3
+
+        ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
+                                   xlim=[0, self.tstop], ylabel='Transmembrane Current (mV)', xlabel="Time (ms)")
+
+        ax_axc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
+                                   ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
+
+        plt.show()

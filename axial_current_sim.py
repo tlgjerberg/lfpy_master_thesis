@@ -17,5 +17,5 @@ axon_measure_idxs = np.array([0, 10, 20, 30, 48])
 
 extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
 
-extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
-                      positions, axon_measure_idxs, 10e9, passive=True)
+extPotSim.run_current_sim(cell_models_folder, monophasic_pulse_params, current_amps,
+                          positions, axon_measure_idxs, 10e9, passive=True)
