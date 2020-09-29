@@ -12,7 +12,7 @@ from matplotlib.patches import Ellipse
 np.set_printoptions(threshold=sys.maxsize)
 
 """
- transmembrane current i soma/utvalgte punkter som func av tid
+ transmembrane current i soma/utvalgte punkter som func av tid x
 membran pot som func av tid
 
  snapshots ved start og stop
@@ -207,15 +207,8 @@ class ExternalPotentialSim:
 
     def plot_morphology(self, measure_idxs):
 
-        self.cell_plot_idxs = measure_idxs.astype(
-            dtype='int')  # List of measurement points
-        # cell_plot_colors = {cell_plot_idxs[idx]: plt.cm.Greens_r(
-        #     1. / (len(cell_plot_idxs) + 1) * idx + 0.1) for idx in range(len(cell_plot_idxs))}
-        self.cell_plot_colors = idx_clr = {idx: [
-            'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
-
         # Defining figure frame and parameters
-        # fig = plt.figure(figsize=[18, 8])
+
         self.fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
                                  top=0.9, bottom=0.1)
 
@@ -281,7 +274,6 @@ class ExternalPotentialSim:
         v_field_ext = np.zeros((100, 200))
         xf = np.linspace(-500, 500, 100)
         zf = np.linspace(-500, 1000, 200)
-        # print(self.cell.xend)
         # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
         # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
 
@@ -332,8 +324,13 @@ class ExternalPotentialSim:
 
     def plot_cellsim(self, measure_idxs):
         # Simulating cell after all parameters and field has been added
-        # self.cell.simulate(rec_vmem=True)
         self.fig = plt.figure(figsize=[18, 8])
+
+        self.cell_plot_idxs = measure_idxs.astype(
+            dtype='int')  # List of measurement points
+
+        self.cell_plot_colors = idx_clr = {idx: [
+            'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
         self.plot_morphology(measure_idxs)
         self.plot_external_field()
@@ -379,47 +376,24 @@ class ExternalPotentialSim:
 
     def plot_currents(self, measure_idxs):
 
+        # Midpoint index for pulse as an extra test point in time
         self.mid_idx = (self.stop_idx + self.start_idx) // 2
 
         # Time indices for snapshots currents
         timepoints = np.array(
             [self.start_idx + 1, self.mid_idx, self.stop_idx])
 
-        # print(self.cell.tvec[self.start_idx])
-        # fig_snap1, ax_snap1 = plt.subplots()
-        plt.figure()
-        plt.plot(self.cell.imem[:, self.start_idx + 1], self.cell.zmid)
-        plt.figure()
-        plt.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid)
-        plt.figure()
-        plt.plot(self.cell.tvec, self.cell.imem[0, :])
-        # plt.show()
-        # print(timepoints)
-
+        # Extracting axial currents and their coordinates
         ax_current, _, pos_coord = self.cell.get_axial_currents_from_vmem(
             timepoints=timepoints)
-        # print(ax_current[0].shape, ax_current[1].shape, ax_current[2].shape)
-        plt.figure()
-        plt.plot(ax_current[:, 0], pos_coord[:, 2])
-        plt.axvline(0, ls="--", c='grey')
-        plt.xlim([-6, 6])
 
-        # plt.show()
-        # ax_current = np.zeros(len(timepoints))
-        #
-        # print(self.cell.imem.size)
-        #
-        # for idx, t in enumerate(timepoints):
-        #     ax_current[idx] = self.cell.imem[:, t]
-        #
-        # print(ax_current)
-        # ax_res = self.cell.get_axial_resitance()
+        self.fig = plt.figure()  # figsize=[18, 8]
 
-        # for t in timepoints:
-        #
-        #     self.cell.vmem[t]
+        self.cell_plot_idxs = measure_idxs.astype(
+            dtype='int')  # List of measurement points
 
-        self.fig = plt.figure(figsize=[18, 8])
+        self.cell_plot_colors = idx_clr = {idx: [
+            'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
         self.plot_morphology(measure_idxs)
         self.plot_external_field()
@@ -429,10 +403,27 @@ class ExternalPotentialSim:
         ax_w = 0.6
         ax_left = 0.3
 
-        ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
+        ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h],  # ylim=[-120, 50],
                                    xlim=[0, self.tstop], ylabel='Transmembrane Current (mV)', xlabel="Time (ms)")
 
-        ax_axc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
-                                   ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
+        [ax_tmc.plot(self.cell.tvec, self.cell.imem[idx, :],
+                     c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
+
+        self.plot_membrane_potential()
+
+        fig_snap1, ax_snap1 = plt.subplots()
+        ax_snap1.plot(self.cell.imem[:, self.start_idx + 1], self.cell.zmid)
+        ax_snap1.axvline(0, ls="--", c='grey')
+        fig_snap2, ax_snap2 = plt.subplots()
+        ax_snap2.axvline(0, ls="--", c='grey')
+        ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid)
+
+        fig_axial, ax_axial = plt.subplots()
+        ax_axial.plot(ax_current[:, 0], pos_coord[:, 2])
+        ax_axial.axvline(0, ls="--", c='grey')
+        ax_axial.xlim([-6, 6])
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
 
         plt.show()
