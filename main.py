@@ -412,16 +412,23 @@ class ExternalPotentialSim:
         self.plot_membrane_potential()
 
         fig_snap1, ax_snap1 = plt.subplots()
-        ax_snap1.plot(self.cell.imem[:, self.start_idx + 1], self.cell.zmid)
+        ax_snap1.plot(
+            self.cell.imem[:, self.start_idx + 1], self.cell.zmid, 'o-')
         ax_snap1.axvline(0, ls="--", c='grey')
+        ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
+        ax_snap1.set_ylabel('Cell Compartments in z direction')
         fig_snap2, ax_snap2 = plt.subplots()
         ax_snap2.axvline(0, ls="--", c='grey')
-        ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid)
+        ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid, 'o-')
+        ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
+        ax_snap1.set_ylabel('Cell Compartments in z direction')
 
         fig_axial, ax_axial = plt.subplots()
         ax_axial.plot(ax_current[:, 0], pos_coord[:, 2])
         ax_axial.axvline(0, ls="--", c='grey')
-        ax_axial.xlim([-6, 6])
+        ax_axial.set_xlim([-6, 6])
+        ax_axial.set_xlabel(f'Axial Current at time {timepoints[0]} ms (nA)')
+        ax_axial.set_ylabel('Cell Compartments Along Axon (z direction)')
 
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
