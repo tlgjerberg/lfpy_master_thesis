@@ -332,6 +332,8 @@ class ExternalPotentialSim:
         self.cell_plot_colors = idx_clr = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
+        # self.morph_ax_params =
+
         self.plot_morphology(measure_idxs)
         self.plot_external_field()
         self.plot_membrane_potential()
