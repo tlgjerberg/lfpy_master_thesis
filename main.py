@@ -213,7 +213,7 @@ class ExternalPotentialSim:
                                  top=0.9, bottom=0.1)
 
         # Adding axes with appropriate parameters
-        ax_m = self.fig.add_axes([-0.01, 0.05, 0.2, 0.90], aspect=1, frameon=False,
+        ax_m = self.fig.add_axes(self.morph_ax_params, aspect=1, frameon=False,
                                  xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
 
         # Names of different neuron parts and color codings for each
@@ -293,13 +293,9 @@ class ExternalPotentialSim:
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im_p, cax=cax, label='mV')
 
-    def plot_membrane_potential(self):
-        ax_top = 0.90
-        ax_h = 0.30
-        ax_w = 0.6
-        ax_left = 0.3
+    def plot_membrane_potential(self, placement):
 
-        ax_vm = self.fig.add_axes([ax_left, ax_top - ax_h - 0.47, ax_w, ax_h],  # ylim=[-120, 50],
+        ax_vm = self.fig.add_axes(placement,  # ylim=[-120, 50],
                                   xlim=[0, self.tstop], xlabel="Time (ms)")
 
         ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
@@ -311,13 +307,9 @@ class ExternalPotentialSim:
         [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
                     c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
 
-    def plot_current_pulse(self):
-        ax_top = 0.90
-        ax_h = 0.30
-        ax_w = 0.6
-        ax_left = 0.3
+    def plot_current_pulse(self, placement):
 
-        ax_stim = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h], xlim=[0, self.tstop],
+        ax_stim = self.fig.add_axes(placement, xlim=[0, self.tstop],
                                     ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
         # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
         ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
@@ -332,12 +324,20 @@ class ExternalPotentialSim:
         self.cell_plot_colors = idx_clr = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
-        # self.morph_ax_params =
+        self.morph_ax_params = [-0.01, 0.05, 0.2, 0.90]
 
         self.plot_morphology(measure_idxs)
         self.plot_external_field()
-        self.plot_membrane_potential()
-        self.plot_current_pulse()
+
+        ax_top = 0.90
+        ax_h = 0.30
+        ax_w = 0.6
+        ax_left = 0.3
+        stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
+        mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
+
+        self.plot_membrane_potential(mem_axes_placement)
+        self.plot_current_pulse(stim_axes_placement)
 
         # plt.show()
         if not os.path.isdir(self.save_folder):
@@ -345,6 +345,8 @@ class ExternalPotentialSim:
 
         self.fig.savefig(join(
             self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
+
+        plt.close(fig=self.fig)
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
 
@@ -397,13 +399,16 @@ class ExternalPotentialSim:
         self.cell_plot_colors = idx_clr = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
+        self.morph_ax_params = [0.8, 0.05, 0.2, 0.90]
+
         self.plot_morphology(measure_idxs)
         self.plot_external_field()
 
         ax_top = 0.90
         ax_h = 0.30
         ax_w = 0.6
-        ax_left = 0.3
+        ax_left = 0.1
+        mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
 
         ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h],  # ylim=[-120, 50],
                                    xlim=[0, self.tstop], ylabel='Transmembrane Current (mV)', xlabel="Time (ms)")
@@ -411,8 +416,9 @@ class ExternalPotentialSim:
         [ax_tmc.plot(self.cell.tvec, self.cell.imem[idx, :],
                      c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
 
-        self.plot_membrane_potential()
+        self.plot_membrane_potential(mem_axes_placement)
 
+        # Plotting snapshots at start and stop times of current pulse
         fig_snap1, ax_snap1 = plt.subplots()
         ax_snap1.plot(
             self.cell.imem[:, self.start_idx + 1], self.cell.zmid, 'o-')
@@ -425,6 +431,7 @@ class ExternalPotentialSim:
         ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
         ax_snap1.set_ylabel('Cell Compartments in z direction')
 
+        # Plotting axial current along the z-direction of
         fig_axial, ax_axial = plt.subplots()
         ax_axial.plot(ax_current[:, 0], pos_coord[:, 2])
         ax_axial.axvline(0, ls="--", c='grey')
