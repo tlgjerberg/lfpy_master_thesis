@@ -202,6 +202,9 @@ class ExternalPotentialSim:
         if not passive:
             neuron.h('forall insert hh')
 
+        elec_params['positions'] = positions[0]
+        elec_params['pulse_amp'] = current_amps
+
         self.extra_cellular_stimuli(elec_params)
         self.run_cell_simulation()
         self.plot_currents(measure_idxs)
