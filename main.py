@@ -24,10 +24,11 @@ class ExternalPotentialSim:
 
     def __init__(self, cell_params):
 
-        root_folder = os.path.dirname(__file__)
+        self.root_folder = os.path.dirname(__file__)
 
         self.cell_params = cell_params
-        self.save_folder = join(root_folder, cell_params['save_folder_name'])
+        self.save_folder = join(
+            self.root_folder, cell_params['save_folder_name'])
         self.dt = cell_params['dt']
         self.tstop = cell_params['tstop']
         self.cut_off = cell_params["cut_off"]
@@ -208,7 +209,6 @@ class ExternalPotentialSim:
     def plot_morphology(self, measure_idxs):
 
         # Defining figure frame and parameters
-
         self.fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
                                  top=0.9, bottom=0.1)
 
@@ -231,7 +231,6 @@ class ExternalPotentialSim:
         used_clrs = []
 
         # PLOTTING CELL MORPHOLOGY
-
         # Sets each segment to the color matching the name set by sec_clrs
         for idx in range(self.cell.totnsegs):
             sec_name = self.cell.get_idx_name(idx)[1]
@@ -391,6 +390,10 @@ class ExternalPotentialSim:
         ax_current, _, pos_coord = self.cell.get_axial_currents_from_vmem(
             timepoints=timepoints)
 
+        save_folder = 'axon_bisc_currents'
+
+        self.save_folder = join(self.root_folder, save_folder)
+
         self.fig = plt.figure()  # figsize=[18, 8]
 
         self.cell_plot_idxs = measure_idxs.astype(
@@ -399,15 +402,15 @@ class ExternalPotentialSim:
         self.cell_plot_colors = idx_clr = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
-        self.morph_ax_params = [0.8, 0.05, 0.2, 0.90]
+        self.morph_ax_params = [0.6, 0.05, 0.2, 0.90]
 
         self.plot_morphology(measure_idxs)
         self.plot_external_field()
 
         ax_top = 0.90
         ax_h = 0.30
-        ax_w = 0.6
-        ax_left = 0.1
+        ax_w = 0.3
+        ax_left = 0.2
         mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
 
         ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h],  # ylim=[-120, 50],
@@ -425,6 +428,7 @@ class ExternalPotentialSim:
         ax_snap1.axvline(0, ls="--", c='grey')
         ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
         ax_snap1.set_ylabel('Cell Compartments in z direction')
+
         fig_snap2, ax_snap2 = plt.subplots()
         ax_snap2.axvline(0, ls="--", c='grey')
         ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid, 'o-')
@@ -442,4 +446,15 @@ class ExternalPotentialSim:
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
+        self.fig.savefig(join(
+            self.save_folder, f'transmembrane_current_amp={self.amp}.svg'), dpi=300)
+        fig_snap1.savefig(join(
+            self.save_folder, f'transmembrane_current_snapshot t={self.start_idx + 1}.png'), dpi=300)
+        fig_snap2.savefig(join(
+            self.save_folder, f'transmembrane_current_snapshot t={self.stop_idx}.png'), dpi=300)
+        fig_axial.savefig(join(
+            self.save_folder, f'axial_current_soma_snapshot t={timepoints[0]}.png'), dpi=300)
+
         plt.show()
+
+        plt.close(fig=self.fig)
