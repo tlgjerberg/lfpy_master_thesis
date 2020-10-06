@@ -419,44 +419,44 @@ class ExternalPotentialSim:
         ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h],  # ylim=[-120, 50],
                                    xlim=[0, self.tstop], ylabel='Transmembrane Current (mV)', xlabel="Time (ms)")
 
-        [ax_tmc.plot(self.cell.tvec, self.cell.imem[idx, :],
-                     c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
+        # [ax_tmc.plot(self.cell.tvec, self.cell.imem[idx, :],
+        #              c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
 
         self.plot_membrane_potential(mem_axes_placement)
 
         # Plotting snapshots at start and stop times of current pulse
-        fig_snap1, ax_snap1 = plt.subplots()
-        ax_snap1.plot(
-            self.cell.imem[:, self.start_idx + 1], self.cell.zmid, 'o-')
-        ax_snap1.axvline(0, ls="--", c='grey')
-        ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
-        ax_snap1.set_ylabel('Cell Compartments in z direction')
-
-        fig_snap2, ax_snap2 = plt.subplots()
-        ax_snap2.axvline(0, ls="--", c='grey')
-        ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid, 'o-')
-        ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
-        ax_snap1.set_ylabel('Cell Compartments in z direction')
-
-        # Plotting axial current along the z-direction of
-        fig_axial, ax_axial = plt.subplots()
-        ax_axial.plot(ax_current[:, 0], pos_coord[:, 2])
-        ax_axial.axvline(0, ls="--", c='grey')
-        ax_axial.set_xlim([-6, 6])
-        ax_axial.set_xlabel(f'Axial Current at time {timepoints[0]} ms (nA)')
-        ax_axial.set_ylabel('Cell Compartments Along Axon (z direction)')
-
-        if not os.path.isdir(self.save_folder):
-            os.makedirs(self.save_folder)
-
-        self.fig.savefig(join(
-            self.save_folder, f'transmembrane_current_amp={self.amp}.svg'), dpi=300)
-        fig_snap1.savefig(join(
-            self.save_folder, f'transmembrane_current_snapshot t={self.start_idx + 1}.png'), dpi=300)
-        fig_snap2.savefig(join(
-            self.save_folder, f'transmembrane_current_snapshot t={self.stop_idx}.png'), dpi=300)
-        fig_axial.savefig(join(
-            self.save_folder, f'axial_current_soma_snapshot t={timepoints[0]}.png'), dpi=300)
+        # fig_snap1, ax_snap1 = plt.subplots()
+        # ax_snap1.plot(
+        #     self.cell.imem[:, self.start_idx + 1], self.cell.zmid, 'o-')
+        # ax_snap1.axvline(0, ls="--", c='grey')
+        # ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
+        # ax_snap1.set_ylabel('Cell Compartments in z direction')
+        #
+        # fig_snap2, ax_snap2 = plt.subplots()
+        # ax_snap2.axvline(0, ls="--", c='grey')
+        # ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid, 'o-')
+        # ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
+        # ax_snap1.set_ylabel('Cell Compartments in z direction')
+        #
+        # # Plotting axial current along the z-direction of
+        # fig_axial, ax_axial = plt.subplots()
+        # ax_axial.plot(ax_current[:, 0], pos_coord[:, 2])
+        # ax_axial.axvline(0, ls="--", c='grey')
+        # ax_axial.set_xlim([-6, 6])
+        # ax_axial.set_xlabel(f'Axial Current at time {timepoints[0]} ms (nA)')
+        # ax_axial.set_ylabel('Cell Compartments Along Axon (z direction)')
+        #
+        # if not os.path.isdir(self.save_folder):
+        #     os.makedirs(self.save_folder)
+        #
+        # self.fig.savefig(join(
+        #     self.save_folder, f'transmembrane_current_amp={self.amp}.svg'), dpi=300)
+        # fig_snap1.savefig(join(
+        #     self.save_folder, f'transmembrane_current_snapshot t={self.start_idx + 1}.png'), dpi=300)
+        # fig_snap2.savefig(join(
+        #     self.save_folder, f'transmembrane_current_snapshot t={self.stop_idx}.png'), dpi=300)
+        # fig_axial.savefig(join(
+        #     self.save_folder, f'axial_current_soma_snapshot t={timepoints[0]}.png'), dpi=300)
 
         plt.show()
 
