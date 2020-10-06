@@ -320,6 +320,9 @@ class ExternalPotentialSim:
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[18, 8])
 
+        for m in measure_idxs:
+            print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
+
         self.cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
 
@@ -341,13 +344,12 @@ class ExternalPotentialSim:
         self.plot_membrane_potential(mem_axes_placement)
         self.plot_current_pulse(stim_axes_placement)
 
-        # plt.show()
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
         self.fig.savefig(join(
             self.save_folder, f'ext_field_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
-
+        # plt.show()
         plt.close(fig=self.fig)
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
@@ -366,18 +368,18 @@ class ExternalPotentialSim:
 
     def plot_dV(self, elec_dists, dV):
 
-        elec_dists = np.log(elec_dists)
-        dV = np.log(dV)
+        # elec_dists = np.log(elec_dists)
+        # dV = np.log(dV)
 
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
         ax.set_ylabel('dV (mV)')
-        ax.plot(elec_dists, dV, '-o')
+        ax.loglog(elec_dists, dV, '-o')
 
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
-        plt.savefig(
+        fig.savefig(
             join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
 
     def plot_currents(self, measure_idxs):
