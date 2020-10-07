@@ -94,7 +94,12 @@ class ExternalPotentialSim:
             #              self.cell_dist_to_top, x=self.x_shift)
             # cell.set_rotation(z=self.z_rot)
             self.cell.set_pos(z=-self.cell_dist_to_top)
-            self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
+            # Default rotation
+            # self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
+            # Axon y-coordinate close to 0
+            # self.cell.set_rotation(x=4.9, y=-3.166, z=-3)
+            # Apical dendtrite measurement point at aprrox y=0
+            self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
 
     def extra_cellular_stimuli(self, elec_params):
         """
@@ -427,39 +432,39 @@ class ExternalPotentialSim:
         self.plot_membrane_potential(mem_axes_placement)
 
         # Plotting snapshots at start and stop times of current pulse
-        # fig_snap1, ax_snap1 = plt.subplots()
-        # ax_snap1.plot(
-        #     self.cell.imem[:, self.start_idx + 1], self.cell.zmid, 'o-')
-        # ax_snap1.axvline(0, ls="--", c='grey')
-        # ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
-        # ax_snap1.set_ylabel('Cell Compartments in z direction')
-        #
-        # fig_snap2, ax_snap2 = plt.subplots()
-        # ax_snap2.axvline(0, ls="--", c='grey')
-        # ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid, 'o-')
-        # ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
-        # ax_snap1.set_ylabel('Cell Compartments in z direction')
-        #
-        # # Plotting axial current along the z-direction of
-        # fig_axial, ax_axial = plt.subplots()
-        # ax_axial.plot(ax_current[:, 0], pos_coord[:, 2])
-        # ax_axial.axvline(0, ls="--", c='grey')
-        # ax_axial.set_xlim([-6, 6])
-        # ax_axial.set_xlabel(f'Axial Current at time {timepoints[0]} ms (nA)')
-        # ax_axial.set_ylabel('Cell Compartments Along Axon (z direction)')
-        #
-        # if not os.path.isdir(self.save_folder):
-        #     os.makedirs(self.save_folder)
-        #
-        # self.fig.savefig(join(
-        #     self.save_folder, f'transmembrane_current_amp={self.amp}.svg'), dpi=300)
-        # fig_snap1.savefig(join(
-        #     self.save_folder, f'transmembrane_current_snapshot t={self.start_idx + 1}.png'), dpi=300)
-        # fig_snap2.savefig(join(
-        #     self.save_folder, f'transmembrane_current_snapshot t={self.stop_idx}.png'), dpi=300)
-        # fig_axial.savefig(join(
-        #     self.save_folder, f'axial_current_soma_snapshot t={timepoints[0]}.png'), dpi=300)
+        fig_snap1, ax_snap1 = plt.subplots()
+        ax_snap1.plot(
+            self.cell.imem[:, self.start_idx + 1], self.cell.zmid, 'o-')
+        ax_snap1.axvline(0, ls="--", c='grey')
+        ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
+        ax_snap1.set_ylabel('Cell Compartments in z direction')
 
-        plt.show()
+        fig_snap2, ax_snap2 = plt.subplots()
+        ax_snap2.axvline(0, ls="--", c='grey')
+        ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid, 'o-')
+        ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
+        ax_snap1.set_ylabel('Cell Compartments in z direction')
+
+        # Plotting axial current along the z-direction of
+        fig_axial, ax_axial = plt.subplots()
+        ax_axial.plot(ax_current[:, 0], pos_coord[:, 2])
+        ax_axial.axvline(0, ls="--", c='grey')
+        ax_axial.set_xlim([-6, 6])
+        ax_axial.set_xlabel(f'Axial Current at time {timepoints[0]} ms (nA)')
+        ax_axial.set_ylabel('Cell Compartments Along Axon (z direction)')
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        self.fig.savefig(join(
+            self.save_folder, f'transmembrane_current_amp={self.amp}.svg'), dpi=300)
+        fig_snap1.savefig(join(
+            self.save_folder, f'transmembrane_current_snapshot t={self.start_idx + 1}.png'), dpi=300)
+        fig_snap2.savefig(join(
+            self.save_folder, f'transmembrane_current_snapshot t={self.stop_idx}.png'), dpi=300)
+        fig_axial.savefig(join(
+            self.save_folder, f'axial_current_soma_snapshot t={timepoints[0]}.png'), dpi=300)
+
+        # plt.show()
 
         plt.close(fig=self.fig)
