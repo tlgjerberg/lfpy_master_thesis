@@ -9,7 +9,11 @@ import sys
 import time
 from os.path import join
 from matplotlib.patches import Ellipse
-np.set_printoptions(threshold=sys.maxsize)
+from mpi4py import MPI
+
+COMM = MPI.COMM_WORLD
+SIZE = COMM.Get_size()
+RANK = COMM.Get_rank()
 
 """
  transmembrane current i soma/utvalgte punkter som func av tid x
@@ -167,6 +171,17 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
+    def create_measure_points(self, coords):
+
+        print(coords.shape[0])
+        measure_idxs = []
+
+        for i in range(coords.shape[0]):
+            x, y, z = coords[0, :]
+            measure_idxs.append(self.cell.get_closest_idx(x, y, z))
+
+        measure_idxs
+
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
 
         self.return_cell(cell_models_folder)
@@ -195,6 +210,8 @@ class ExternalPotentialSim:
 
         self.plot_steady_state(elec_dists[:, 0], ss_pot)
         self.plot_dV(elec_dists[:, 0], dV)
+        coords = np.array([[0, 0, -200], [201, 131, 602], [-242, 43, 929]])
+        self.create_measure_points(coords)
 
         # Freeing up some variables
         I = None
@@ -325,8 +342,8 @@ class ExternalPotentialSim:
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[18, 8])
 
-        # for m in measure_idxs:
-        #     print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
+        for m in measure_idxs:
+            print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
 
         self.cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
