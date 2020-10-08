@@ -57,11 +57,13 @@ class ExternalPotentialSim:
             cell = LFPy.Cell(**cell_parameters)
             self.cell = cell
             self.v_init = cell_parameters['v_init']
+            if not passive:
+                neuron.h('forall insert hh')
 
         elif self.cell_name == 'Hallermann':
             model_path = join(cell_models_folder, 'HallermannEtAl2012')
 
-            neuron.load_mechanisms(cell_models_folder)
+            neuron.load_mechanisms(model_path)
 
             cell_parameters = {          # various cell parameters,
                 # 'morphology' : 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
@@ -83,8 +85,8 @@ class ExternalPotentialSim:
                                     # by setting these arguments i cell.simulation()
                 "extracellular": True,
                 "pt3d": True,
-                # 'custom_code': [join(cell_models_folder, 'Cell parameters.hoc'),
-                #                 join(cell_models_folder, 'charge_only_unmyelinated.hoc')]
+                'custom_code': [join(model_path, 'Cell parameters.hoc'),
+                                join(model_path, 'charge.hoc')]
             }
             cell = LFPy.Cell(**cell_parameters)
             self.cell = cell
@@ -95,11 +97,11 @@ class ExternalPotentialSim:
             # cell.set_rotation(z=self.z_rot)
             self.cell.set_pos(z=-self.cell_dist_to_top)
             # Default rotation
-            # self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
+            self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
             # Axon y-coordinate close to 0
             # self.cell.set_rotation(x=4.9, y=-3.166, z=-3)
             # Apical dendtrite measurement point at aprrox y=0
-            self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
+            # self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
 
     def extra_cellular_stimuli(self, elec_params):
         """
@@ -174,8 +176,6 @@ class ExternalPotentialSim:
         dV = np.zeros(len(positions))
 
         # Neuron activation after cell object has been created
-        if not passive:
-            neuron.h('forall insert hh')
 
         for I in current_amps:
 
@@ -325,8 +325,8 @@ class ExternalPotentialSim:
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[18, 8])
 
-        for m in measure_idxs:
-            print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
+        # for m in measure_idxs:
+        #     print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
 
         self.cell_plot_idxs = measure_idxs.astype(
             dtype='int')  # List of measurement points
