@@ -17,11 +17,10 @@ extPotSim = ExternalPotentialSim(cellsim_Hallermann_params)
 
 # Test parameters
 current_amps = [1e4, -1e4, -5e3, -4e3, -3e3,  -1e3]  # uA
-positions = [np.array([[200, 0, 700], ], dtype=float),
-             np.array([[201, 130, 699], ], dtype=float),
-             np.array([[-215, 0, 860], ], dtype=float),
-             np.array([[-150, 0, -180], ], dtype=float),
-             np.array([[-20, 0, 400], ], dtype=float)]
+positions = [np.array([[50, 0, -200], ], dtype=float),
+             np.array([[201, 81, 602], ], dtype=float),
+             np.array([[-242, 7, 929], ], dtype=float),
+             np.array([[-200, 0, 0], ], dtype=float)]
 
 # current_amps = [-1e4]
 # positions = [np.array([[200, 0, 700], ], dtype=float)]
@@ -32,4 +31,4 @@ start = time.time()
 extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
                       positions, coordinates, 20)
 end = time.time()
-print(f'Time to execute {end - start}')
+print(f'Time to execute {end - start} seconds')
