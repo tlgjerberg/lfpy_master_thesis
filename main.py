@@ -156,15 +156,13 @@ class ExternalPotentialSim:
         self._find_steady_state()
         self.dV = self.v_ss - self.v_init
 
-    def _record_dist_to_electrode(self, measure_idxs):
+    def _record_dist_to_electrode(self, coords):
 
-        self.record_dist = np.zeros(len(measure_idxs))
+        self.record_dist = np.zeros(coords.shape[0])
 
-        for idx, pos in enumerate(measure_idxs):
-            measure_pos = np.array(
-                [self.cell.xmid[pos], self.cell.ymid[pos], self.cell.zmid[pos]])
+        for idx in range(coords.shape[0]):
             self.record_dist[idx] = np.sum(np.absolute(
-                measure_pos - np.array([self.x0, self.y0, self.z0])))
+                coords[idx, :] - np.array([self.x0, self.y0, self.z0])))
 
         return self.record_dist
 
@@ -173,22 +171,22 @@ class ExternalPotentialSim:
 
     def create_measure_points(self, coords):
 
-        print(coords.shape[0])
-        measure_idxs = []
+        measure_pnts = []
 
         for i in range(coords.shape[0]):
-            x, y, z = coords[0, :]
-            measure_idxs.append(self.cell.get_closest_idx(x, y, z))
+            x, y, z = coords[i, :]
+            measure_pnts.append(self.cell.get_closest_idx(x, y, z))
 
-        measure_idxs
+        self.measure_idxs = np.array(measure_pnts)
 
-    def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
+    def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, coords, stop_time, passive=False):
 
         self.return_cell(cell_models_folder)
 
-        elec_dists = np.zeros((len(positions), len(measure_idxs)))
+        elec_dists = np.zeros((len(positions), coords.shape[0]))
         ss_pot = np.zeros(len(positions))
         dV = np.zeros(len(positions))
+        self.create_measure_points(coords)
 
         # Neuron activation after cell object has been created
 
@@ -201,23 +199,22 @@ class ExternalPotentialSim:
                 elec_params['positions'] = pos
                 self.extra_cellular_stimuli(elec_params)
                 self.run_cell_simulation()
-                self.plot_cellsim(measure_idxs)
+                self.plot_cellsim()
                 self._find_steady_state()
                 ss_pot[idx] = self.v_ss
                 self._dV()
                 dV[idx] = self.dV
-                elec_dists[idx] = self._record_dist_to_electrode(measure_idxs)
+                elec_dists[idx] = self._record_dist_to_electrode(coords)
 
         self.plot_steady_state(elec_dists[:, 0], ss_pot)
         self.plot_dV(elec_dists[:, 0], dV)
-        coords = np.array([[0, 0, -200], [201, 131, 602], [-242, 43, 929]])
         self.create_measure_points(coords)
 
         # Freeing up some variables
         I = None
         pos = None
 
-    def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, measure_idxs, stop_time, passive=False):
+    def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, stop_time, passive=False):
         self.return_cell(cell_models_folder)
 
         # Neuron activation after cell object has been created
@@ -229,9 +226,9 @@ class ExternalPotentialSim:
 
         self.extra_cellular_stimuli(elec_params)
         self.run_cell_simulation()
-        self.plot_currents(measure_idxs)
+        self.plot_currents()
 
-    def plot_morphology(self, measure_idxs):
+    def plot_morphology(self):
 
         # Defining figure frame and parameters
         self.fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
@@ -338,14 +335,14 @@ class ExternalPotentialSim:
         # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
         ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
 
-    def plot_cellsim(self, measure_idxs):
+    def plot_cellsim(self):
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[18, 8])
 
-        for m in measure_idxs:
-            print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
+        # for m in self.measure_idxs:
+        #     print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
 
-        self.cell_plot_idxs = measure_idxs.astype(
+        self.cell_plot_idxs = self.measure_idxs.astype(
             dtype='int')  # List of measurement points
 
         self.cell_plot_colors = idx_clr = {idx: [
@@ -353,7 +350,7 @@ class ExternalPotentialSim:
 
         self.morph_ax_params = [-0.01, 0.05, 0.2, 0.90]
 
-        self.plot_morphology(measure_idxs)
+        self.plot_morphology()
         self.plot_external_field()
 
         ax_top = 0.90
@@ -404,7 +401,7 @@ class ExternalPotentialSim:
         fig.savefig(
             join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
 
-    def plot_currents(self, measure_idxs):
+    def plot_currents(self):
 
         # Midpoint index for pulse as an extra test point in time
         self.mid_idx = (self.stop_idx + self.start_idx) // 2
@@ -423,7 +420,7 @@ class ExternalPotentialSim:
 
         self.fig = plt.figure()  # figsize=[18, 8]
 
-        self.cell_plot_idxs = measure_idxs.astype(
+        self.cell_plot_idxs = self.measure_idxs.astype(
             dtype='int')  # List of measurement points
 
         self.cell_plot_colors = idx_clr = {idx: [
@@ -431,7 +428,7 @@ class ExternalPotentialSim:
 
         self.morph_ax_params = [0.6, 0.05, 0.2, 0.90]
 
-        self.plot_morphology(measure_idxs)
+        self.plot_morphology()
         self.plot_external_field()
 
         ax_top = 0.90

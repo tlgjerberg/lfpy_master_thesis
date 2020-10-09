@@ -30,4 +30,4 @@ coordinates = np.array([[0, 0, -200], [201, 131, 602], [-242, 43, 929]])
 
 # monophasic_pulse_params['stop_time'] = 20
 extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
-                      positions, np.array([0, 123, 470]), 20)
+                      positions, coordinates, 20)
