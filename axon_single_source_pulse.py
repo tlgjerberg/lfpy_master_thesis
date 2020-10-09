@@ -37,7 +37,8 @@ positions = [np.array([[0, 0, -50], ], dtype=float),
              np.array([[0, 0, -400], ], dtype=float),
              np.array([[0, 0, -500], ], dtype=float)]
 
-axon_measure_idxs = np.array([0, 20, 48])
+axon_measure_idxs = np.array(
+    [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
 monophasic_pulse_params['stop_time'] = 200
 
 extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)

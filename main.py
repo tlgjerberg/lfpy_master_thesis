@@ -41,7 +41,7 @@ class ExternalPotentialSim:
         self.x_shift = cell_params['x_shift']
         self.z_rot = cell_params['z_rot']
 
-    def return_cell(self, cell_models_folder):
+    def return_cell(self, cell_models_folder, passive=True):
 
         if self.cell_name == 'axon':
             model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
@@ -181,7 +181,7 @@ class ExternalPotentialSim:
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, coords, stop_time, passive=False):
 
-        self.return_cell(cell_models_folder)
+        self.return_cell(cell_models_folder, passive)
 
         elec_dists = np.zeros((len(positions), coords.shape[0]))
         ss_pot = np.zeros(len(positions))
