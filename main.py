@@ -61,6 +61,7 @@ class ExternalPotentialSim:
             cell = LFPy.Cell(**cell_parameters)
             self.cell = cell
             self.v_init = cell_parameters['v_init']
+            # print(self.cell.zmid[1] - self.cell.zmid[0])
             if not passive:
                 neuron.h('forall insert hh')
 
@@ -101,11 +102,29 @@ class ExternalPotentialSim:
             # cell.set_rotation(z=self.z_rot)
             self.cell.set_pos(z=-self.cell_dist_to_top)
             # Default rotation
-            self.cell.set_rotation(x=4.729, y=-3.166, z=-3)
+            self.cell.set_rotation(x=4.729, y=-3.05, z=-3)
             # Axon y-coordinate close to 0
             # self.cell.set_rotation(x=4.9, y=-3.166, z=-3)
             # Apical dendtrite measurement point at aprrox y=0
             # self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
+
+    def create_measure_points(self, coords):
+
+        measure_pnts = []
+
+        for i in range(coords.shape[0]):
+            x, y, z = coords[i, :]
+            print(i, self.cell.get_closest_idx(x, y, z))
+            measure_pnts.append(self.cell.get_closest_idx(x, y, z))
+
+        self.measure_pnts = np.array(measure_pnts)
+
+        if self.cell_name == 'Hallermann':
+            self.elec_positions = []
+            for mp in self.measure_pnts:
+                self.elec_positions.append(
+                    np.array([[int(self.cell.xmid[mp]) - 100, int(self.cell.ymid[mp]),
+                               int(self.cell.zmid[mp])], ], dtype=float))
 
     def extra_cellular_stimuli(self, elec_params):
         """
@@ -169,32 +188,23 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
-    def create_measure_points(self, coords):
-
-        measure_pnts = []
-
-        for i in range(coords.shape[0]):
-            x, y, z = coords[i, :]
-            measure_pnts.append(self.cell.get_closest_idx(x, y, z))
-
-        self.measure_idxs = np.array(measure_pnts)
-
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, coords, stop_time, passive=False):
 
         self.return_cell(cell_models_folder, passive)
-
+        self.elec_positions = positions
+        print('manual', self.elec_positions)
         elec_dists = np.zeros((len(positions), coords.shape[0]))
         ss_pot = np.zeros(len(positions))
         dV = np.zeros(len(positions))
         self.create_measure_points(coords)
-
+        print('automatic', self.elec_positions)
         # Neuron activation after cell object has been created
 
         for I in current_amps:
 
             elec_params['pulse_amp'] = I
 
-            for idx, pos in enumerate(positions):
+            for idx, pos in enumerate(self.elec_positions):
 
                 elec_params['positions'] = pos
                 self.extra_cellular_stimuli(elec_params)
@@ -339,10 +349,10 @@ class ExternalPotentialSim:
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[18, 8])
 
-        # for m in self.measure_idxs:
-        #     print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
+        for m in self.measure_pnts:
+            print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
 
-        self.cell_plot_idxs = self.measure_idxs.astype(
+        self.cell_plot_idxs = self.measure_pnts.astype(
             dtype='int')  # List of measurement points
 
         self.cell_plot_colors = idx_clr = {idx: [
@@ -420,7 +430,7 @@ class ExternalPotentialSim:
 
         self.fig = plt.figure()  # figsize=[18, 8]
 
-        self.cell_plot_idxs = self.measure_idxs.astype(
+        self.cell_plot_idxs = self.measure_pnts.astype(
             dtype='int')  # List of measurement points
 
         self.cell_plot_colors = idx_clr = {idx: [
