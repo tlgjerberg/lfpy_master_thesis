@@ -119,6 +119,7 @@ class ExternalPotentialSim:
 
         self.measure_pnts = np.array(measure_pnts)
 
+        # Automatically setting electrode at a given distance from the measurement points
         if self.cell_name == 'Hallermann':
             self.elec_positions = []
             for mp in self.measure_pnts:

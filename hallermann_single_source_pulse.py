@@ -16,7 +16,7 @@ extPotSim = ExternalPotentialSim(cellsim_Hallermann_params)
 
 
 # Test parameters
-# current_amps = [1e4, -1e4, -8e3, 8e3, -7e3, 7e3, -5e3, 5e3]  # uA
+current_amps = [1e4, -1e4, -8e3, 8e3, -7e3, 7e3, -5e3, 5e3]  # uA
 elec_positions = [np.array([[50, 0, -200], ], dtype=float),
                   np.array([[111, 131, 652], ], dtype=float),
                   np.array([[-242, 7, 929], ], dtype=float),
@@ -24,8 +24,8 @@ elec_positions = [np.array([[50, 0, -200], ], dtype=float),
                   np.array([[50, 40, 120], ], dtype=float)]
 
 
-current_amps = [1e4, -1e4]
-# positions = [np.array([[200, 0, 700], ], dtype=float)]
+# current_amps = [1e5, -1e5]
+# elec_positions = [np.array([[-242, 7, 929], ], dtype=float)]
 
 measure_coordinates = np.array([[0, 0, -200], [130, 131, 652],
                                 [-242, 43, 929], [50, 40, 70]])
