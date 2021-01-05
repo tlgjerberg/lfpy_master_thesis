@@ -1,4 +1,4 @@
-/* Created by Language version: 7.5.0 */
+/* Created by Language version: 7.7.0 */
 /* NOT VECTORIZED */
 #define NRN_VECTORIZED 0
 #include <stdio.h>
@@ -88,6 +88,15 @@ extern void hoc_register_limits(int, HocParmLimits*);
 extern void hoc_register_units(int, HocParmUnits*);
 extern void nrn_promote(Prop*, int, int);
 extern Memb_func* memb_func;
+ 
+#define NMODL_TEXT 1
+#if NMODL_TEXT
+static const char* nmodl_file_text;
+static const char* nmodl_filename;
+extern void hoc_reg_nmodl_text(int, const char*);
+extern void hoc_reg_nmodl_filename(int, const char*);
+#endif
+
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
  _p = _prop->param; _ppvar = _prop->dparam;
@@ -175,7 +184,7 @@ static void  nrn_jacob(_NrnThread*, _Memb_list*, int);
 static int _ode_count(int);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
- "7.5.0",
+ "7.7.0",
 "Kv",
  "gbar_Kv",
  0,
@@ -225,6 +234,10 @@ extern void _cvode_abstol( Symbol**, double*, int);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
+ #if NMODL_TEXT
+  hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
+  hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
+#endif
   hoc_register_prop_size(_mechtype, 11, 3);
   hoc_register_dparam_semantics(_mechtype, 0, "k_ion");
   hoc_register_dparam_semantics(_mechtype, 1, "k_ion");
@@ -511,3 +524,120 @@ static void _initlists() {
    _t__znexp = makevector(200*sizeof(double));
 _first = 0;
 }
+
+#if NMODL_TEXT
+static const char* nmodl_filename = "/home/trbjrn/Documents/lfpy_master_thesis/cell_models/HallermannEtAl2012/Kv.mod";
+static const char* nmodl_file_text = 
+  "\n"
+  "COMMENT\n"
+  "\n"
+  "kv.mod\n"
+  "\n"
+  "Potassium channel, Hodgkin-Huxley style kinetics\n"
+  "Kinetic rates based roughly on Sah et al. and Hamill et al. (1991)\n"
+  "\n"
+  "Author: Zach Mainen, Salk Institute, 1995, zach@salk.edu\n"
+  "	\n"
+  "ENDCOMMENT\n"
+  "\n"
+  "INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}\n"
+  "\n"
+  "NEURON {\n"
+  "	SUFFIX Kv\n"
+  "	USEION k READ ek WRITE ik\n"
+  "	RANGE n, gk, gbar\n"
+  "	RANGE ninf, ntau\n"
+  "	GLOBAL Ra, Rb\n"
+  "	GLOBAL q10, temp, tadj, vmin, vmax\n"
+  "}\n"
+  "\n"
+  "UNITS {\n"
+  "	(mA) = (milliamp)\n"
+  "	(mV) = (millivolt)\n"
+  "	(pS) = (picosiemens)\n"
+  "	(um) = (micron)\n"
+  "} \n"
+  "\n"
+  "PARAMETER {\n"
+  "	gbar = 5   	(pS/um2)	: 0.03 mho/cm2\n"
+  "	v 		(mV)\n"
+  "								\n"
+  "	tha  = 25	(mV)		: v 1/2 for inf\n"
+  "	qa   = 9	(mV)		: inf slope		\n"
+  "	\n"
+  "	Ra   = 0.02	(/ms)		: max act rate\n"
+  "	Rb   = 0.002	(/ms)		: max deact rate	\n"
+  "\n"
+  "	dt		(ms)\n"
+  "	celsius		(degC)\n"
+  "	temp = 23	(degC)		: original temp 	\n"
+  "	q10  = 2.3			: temperature sensitivity\n"
+  "\n"
+  "	vmin = -120	(mV)\n"
+  "	vmax = 100	(mV)\n"
+  "} \n"
+  "\n"
+  "\n"
+  "ASSIGNED {\n"
+  "	a		(/ms)\n"
+  "	b		(/ms)\n"
+  "	ik 		(mA/cm2)\n"
+  "	gk		(pS/um2)\n"
+  "	ek		(mV)\n"
+  "	ninf\n"
+  "	ntau (ms)	\n"
+  "	tadj\n"
+  "}\n"
+  " \n"
+  "\n"
+  "STATE { n }\n"
+  "\n"
+  "INITIAL { \n"
+  "	trates(v)\n"
+  "	n = ninf\n"
+  "}\n"
+  "\n"
+  "BREAKPOINT {\n"
+  "        SOLVE states\n"
+  "	gk = tadj*gbar*n\n"
+  "	ik = (1e-4) * gk * (v - ek)\n"
+  "} \n"
+  "\n"
+  "LOCAL nexp\n"
+  "\n"
+  "PROCEDURE states() {   :Computes state variable n \n"
+  "        trates(v)      :             at the current v and dt.\n"
+  "        n = n + nexp*(ninf-n)\n"
+  "        VERBATIM\n"
+  "        return 0;\n"
+  "        ENDVERBATIM\n"
+  "}\n"
+  "\n"
+  "PROCEDURE trates(v) {  :Computes rate and other constants at current v.\n"
+  "                      :Call once from HOC to initialize inf at resting v.\n"
+  "        LOCAL tinc\n"
+  "        TABLE ninf, nexp\n"
+  "	DEPEND dt, celsius, temp, Ra, Rb, tha, qa\n"
+  "	\n"
+  "	FROM vmin TO vmax WITH 199\n"
+  "\n"
+  "	rates(v): not consistently executed from here if usetable_hh == 1\n"
+  "\n"
+  "        tadj = q10^((celsius - temp)/10)\n"
+  "\n"
+  "        tinc = -dt * tadj\n"
+  "        nexp = 1 - exp(tinc/ntau)\n"
+  "}\n"
+  "\n"
+  "\n"
+  "PROCEDURE rates(v) {  :Computes rate and other constants at current v.\n"
+  "                      :Call once from HOC to initialize inf at resting v.\n"
+  "\n"
+  "        a = Ra * (v - tha) / (1 - exp(-(v - tha)/qa))\n"
+  "        b = -Rb * (v - tha) / (1 - exp((v - tha)/qa))\n"
+  "        ntau = 1/(a+b)\n"
+  "	ninf = a*ntau\n"
+  "}\n"
+  "\n"
+  ;
+#endif

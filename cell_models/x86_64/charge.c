@@ -1,4 +1,4 @@
-/* Created by Language version: 7.5.0 */
+/* Created by Language version: 7.7.0 */
 /* NOT VECTORIZED */
 #define NRN_VECTORIZED 0
 #include <stdio.h>
@@ -84,6 +84,15 @@ extern void hoc_register_limits(int, HocParmLimits*);
 extern void hoc_register_units(int, HocParmUnits*);
 extern void nrn_promote(Prop*, int, int);
 extern Memb_func* memb_func;
+ 
+#define NMODL_TEXT 1
+#if NMODL_TEXT
+static const char* nmodl_file_text;
+static const char* nmodl_filename;
+extern void hoc_reg_nmodl_text(int, const char*);
+extern void hoc_reg_nmodl_filename(int, const char*);
+#endif
+
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
  _p = _prop->param; _ppvar = _prop->dparam;
@@ -145,7 +154,7 @@ static void nrn_state(_NrnThread*, _Memb_list*, int);
 static void  nrn_jacob(_NrnThread*, _Memb_list*, int);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
- "7.5.0",
+ "7.7.0",
 "charge_",
  0,
  "vmin_charge_",
@@ -203,6 +212,10 @@ extern void _cvode_abstol( Symbol**, double*, int);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
+ #if NMODL_TEXT
+  hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
+  hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
+#endif
   hoc_register_prop_size(_mechtype, 16, 2);
   hoc_register_dparam_semantics(_mechtype, 0, "na_ion");
   hoc_register_dparam_semantics(_mechtype, 1, "k_ion");
@@ -382,3 +395,118 @@ static void _initlists() {
   if (!_first) return;
 _first = 0;
 }
+
+#if NMODL_TEXT
+static const char* nmodl_filename = "/home/trbjrn/Documents/lfpy_master_thesis/cell_models/HallermannEtAl2012/charge.mod";
+static const char* nmodl_file_text = 
+  "TITLE calculates Na+/K+ charge overlap and excess Na+ influx \n"
+  "\n"
+  "COMMENT\n"
+  "	Hallermann, de Kock, Stuart and Kole, Nature Neuroscience, 2012\n"
+  "	doi:10.1038/nn.3132\n"
+  "ENDCOMMENT\n"
+  "\n"
+  "\n"
+  "NEURON {\n"
+  "        SUFFIX charge_     : changed \"charge\" to \"charge_\" because of conflicts with NEURON's \"charge\"\n"
+  "	USEION na READ ina\n"
+  "	USEION k READ ik\n"
+  "        RANGE vmax, vmin, tmax, tmin\n"
+  "        RANGE na_ch, na_ch_overl, overl\n"
+  "	RANGE na_ch_before_peak\n"
+  "	RANGE na_ch_after_peak\n"
+  "	RANGE na_ch_excess_ratio\n"
+  "        RANGE peak_reached\n"
+  "        RANGE peak_time\n"
+  "}\n"
+  "\n"
+  "PARAMETER {\n"
+  "	tStart (ms)\n"
+  "	tEnd (ms)\n"
+  "	peak_tolerance (mV)\n"
+  "	peak_lowest (mV)\n"
+  "}\n"
+  "\n"
+  "\n"
+  "ASSIGNED {\n"
+  "        v (millivolt)\n"
+  "        vmin (millivolt)\n"
+  "        tmin (ms)\n"
+  "        vmax (millivolt)\n"
+  "        tmax (ms)\n"
+  "        na_ch (milliamp/cm2)\n"
+  "        na_ch_overl (milliamp/cm2)\n"
+  "        na_ch_overl_tmp (milliamp/cm2)\n"
+  "	overl\n"
+  "\n"
+  "	na_ch_excess_ratio\n"
+  "	na_ch_before_peak\n"
+  "	na_ch_after_peak\n"
+  "        peak_reached\n"
+  "        peak_time\n"
+  "	\n"
+  "	ina  (milliamp/cm2)\n"
+  "	ik  (milliamp/cm2)\n"
+  "}\n"
+  "\n"
+  "\n"
+  "INITIAL {\n"
+  "        vmin = 1e6\n"
+  "        tmin = 0\n"
+  "        vmax = -1e6\n"
+  "	tmax = 0\n"
+  "        peak_reached = 0\n"
+  "        peak_time = 0\n"
+  "	na_ch = 0\n"
+  "	na_ch_before_peak = 0\n"
+  "	na_ch_after_peak = 0\n"
+  "	na_ch_excess_ratio = 0\n"
+  "	na_ch_overl = 0\n"
+  "	overl = 0\n"
+  ":	tStart = 500\n"
+  ":	tEnd = 1000	\n"
+  ":	peak_tolerance = 0.1	(millivolt)\n"
+  ":	peak_lowest = -60	(millivolt)\n"
+  "}\n"
+  "\n"
+  "\n"
+  "BREAKPOINT {\n"
+  "VERBATIM\n"
+  "      if (t > tStart) {\n"
+  "		if (t < tEnd) {\n"
+  "			if (v < vmin) {\n"
+  "        		        vmin = v;\n"
+  "                		tmin = t;\n"
+  "		        }\n"
+  "		        if (v > vmax) {\n"
+  "        		        vmax = v;\n"
+  "	                	tmax = t;\n"
+  "		        }\n"
+  " 			na_ch = na_ch + ina;\n"
+  "			na_ch_overl_tmp = ina;				\n"
+  "			if (-ik > ina) {\n"
+  "                		na_ch_overl_tmp = -ik;\n"
+  "		        }\n"
+  "			na_ch_overl = na_ch_overl + na_ch_overl_tmp;\n"
+  "			if (na_ch !=  0) {	//na_ch is negative\n"
+  "                		overl = (na_ch - na_ch_overl) / na_ch;\n"
+  "			}\n"
+  "			if ( (v < vmax - peak_tolerance) && (v > peak_lowest) && (peak_reached == 0) ) {\n"
+  "				peak_reached = 1;\n"
+  "				peak_time = t;\n"
+  "			}\n"
+  "			if (peak_reached == 0) {\n"
+  "				na_ch_before_peak = na_ch_before_peak + ina;			\n"
+  "			} else {\n"
+  "				na_ch_after_peak = na_ch_after_peak + ina;\n"
+  "			}\n"
+  "			if (na_ch_before_peak != 0) {\n"
+  "				na_ch_excess_ratio = (na_ch_before_peak + na_ch_after_peak) / na_ch_before_peak;\n"
+  "			}\n"
+  "		}\n"
+  "	}\n"
+  "ENDVERBATIM\n"
+  "}\n"
+  "\n"
+  ;
+#endif

@@ -124,8 +124,11 @@ class ExternalPotentialSim:
             self.elec_positions = []
             for mp in self.measure_pnts:
                 self.elec_positions.append(
-                    np.array([[int(self.cell.xmid[mp]) - 100, int(self.cell.ymid[mp]),
+                    np.array([[int(self.cell.xmid[mp]) - 50, int(self.cell.ymid[mp]),
                                int(self.cell.zmid[mp])], ], dtype=float))
+
+    def _calc_point_sources_field(self, elec_params):
+        pass
 
     def extra_cellular_stimuli(self, elec_params):
         """
@@ -193,12 +196,10 @@ class ExternalPotentialSim:
 
         self.return_cell(cell_models_folder, passive)
         self.elec_positions = positions
-        print('manual', self.elec_positions)
         elec_dists = np.zeros((len(positions), coords.shape[0]))
         ss_pot = np.zeros(len(positions))
         dV = np.zeros(len(positions))
         self.create_measure_points(coords)
-        print('automatic', self.elec_positions)
         # Neuron activation after cell object has been created
 
         for I in current_amps:
@@ -350,8 +351,8 @@ class ExternalPotentialSim:
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[18, 8])
 
-        for m in self.measure_pnts:
-            print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
+        # for m in self.measure_pnts:
+        #     print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
 
         self.cell_plot_idxs = self.measure_pnts.astype(
             dtype='int')  # List of measurement points

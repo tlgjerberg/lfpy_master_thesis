@@ -1,9 +1,9 @@
 #!/bin/sh
 if test "x${NRNHOME}" = "x" ; then
-	NRNHOME="/home/trbjrn/anaconda3"
+	NRNHOME="/home/trbjrn/anaconda3/envs/lfpy"
 fi
 if test "x${NRNBIN}" = "x" ; then
-	NRNBIN="/home/trbjrn/anaconda3/bin/"
+	NRNBIN="/home/trbjrn/anaconda3/envs/lfpy/bin/"
 fi
 if test "" = "yes" ; then
 	NRNIV="${NRNBIN}nrniv.app/Contents/MacOS/nrniv"

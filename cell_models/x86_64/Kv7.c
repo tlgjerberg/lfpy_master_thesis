@@ -1,4 +1,4 @@
-/* Created by Language version: 7.5.0 */
+/* Created by Language version: 7.7.0 */
 /* VECTORIZED */
 #define NRN_VECTORIZED 1
 #include <stdio.h>
@@ -82,6 +82,15 @@ extern void hoc_register_limits(int, HocParmLimits*);
 extern void hoc_register_units(int, HocParmUnits*);
 extern void nrn_promote(Prop*, int, int);
 extern Memb_func* memb_func;
+ 
+#define NMODL_TEXT 1
+#if NMODL_TEXT
+static const char* nmodl_file_text;
+static const char* nmodl_filename;
+extern void hoc_reg_nmodl_text(int, const char*);
+extern void hoc_reg_nmodl_filename(int, const char*);
+#endif
+
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
  _extcall_prop = _prop;
@@ -142,7 +151,7 @@ static void _ode_matsol(_NrnThread*, _Memb_list*, int);
  static void _ode_matsol_instance1(_threadargsproto_);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
- "7.5.0",
+ "7.7.0",
 "Kv7",
  "gbar_Kv7",
  0,
@@ -195,6 +204,10 @@ extern void _cvode_abstol( Symbol**, double*, int);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
+ #if NMODL_TEXT
+  hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
+  hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
+#endif
   hoc_register_prop_size(_mechtype, 8, 4);
   hoc_register_dparam_semantics(_mechtype, 0, "k_ion");
   hoc_register_dparam_semantics(_mechtype, 1, "k_ion");
@@ -467,4 +480,82 @@ _first = 0;
 
 #if defined(__cplusplus)
 } /* extern "C" */
+#endif
+
+#if NMODL_TEXT
+static const char* nmodl_filename = "/home/trbjrn/Documents/lfpy_master_thesis/cell_models/HallermannEtAl2012/Kv7.mod";
+static const char* nmodl_file_text = 
+  "TITLE Kv7-current\n"
+  "\n"
+  "COMMENT\n"
+  "	Model reproducing cortical M currents, M.H.P. Kole\n"
+  "ENDCOMMENT\n"
+  "\n"
+  "UNITS {\n"
+  "	(mA) = (milliamp)\n"
+  "	(mV) = (millivolt)\n"
+  "	(pS) = (picosiemens)\n"
+  "	(um) = (micron)\n"
+  "\n"
+  "\n"
+  "}\n"
+  "\n"
+  "INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}\n"
+  "\n"
+  "PARAMETER {	\n"
+  "	dt		(ms)\n"
+  "	v 		(mV)\n"
+  "	vhalf = -48 (mV)				 \n"
+  "	gbar = 20	 (pS/um2)	:0.002 mho/cm2\n"
+  " }\n"
+  "\n"
+  "\n"
+  "NEURON {\n"
+  "	SUFFIX Kv7\n"
+  "	USEION k READ ek WRITE ik\n"
+  "	RANGE gbar, ik\n"
+  "}\n"
+  "\n"
+  "STATE { m }\n"
+  "\n"
+  "ASSIGNED {\n"
+  "	ik (mA/cm2)\n"
+  "	gk (pS/um2)\n"
+  "	ek (mV)	\n"
+  "	\n"
+  "}\n"
+  "\n"
+  "\n"
+  "INITIAL {\n"
+  "	m=alpha(v)/(beta(v)+alpha(v))\n"
+  "}\n"
+  "\n"
+  "BREAKPOINT {\n"
+  "	SOLVE state METHOD cnexp\n"
+  "	ik=(1e-4)*gbar*m*(v-ek)\n"
+  "}\n"
+  "\n"
+  "FUNCTION alpha(v(mV)) {\n"
+  "	alpha = 0.00623*exp((v-vhalf)/18.76)	\n"
+  "\n"
+  "}\n"
+  "\n"
+  "FUNCTION beta(v(mV)) {\n"
+  "	beta = 0.0199*exp(-(v-vhalf)/30.6)			\n"
+  "}\n"
+  "\n"
+  "DERIVATIVE state {    \n"
+  "\n"
+  "	m' = (1-m)*alpha(v) - m*beta(v)\n"
+  "\n"
+  "}\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  ;
 #endif

@@ -1,4 +1,4 @@
-/* Created by Language version: 7.5.0 */
+/* Created by Language version: 7.7.0 */
 /* NOT VECTORIZED */
 #define NRN_VECTORIZED 0
 #include <stdio.h>
@@ -101,6 +101,15 @@ extern void hoc_register_limits(int, HocParmLimits*);
 extern void hoc_register_units(int, HocParmUnits*);
 extern void nrn_promote(Prop*, int, int);
 extern Memb_func* memb_func;
+ 
+#define NMODL_TEXT 1
+#if NMODL_TEXT
+static const char* nmodl_file_text;
+static const char* nmodl_filename;
+extern void hoc_reg_nmodl_text(int, const char*);
+extern void hoc_reg_nmodl_filename(int, const char*);
+#endif
+
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
  _p = _prop->param; _ppvar = _prop->dparam;
@@ -218,7 +227,7 @@ static void _ode_matsol(_NrnThread*, _Memb_list*, int);
  static void _ode_matsol_instance1(_threadargsproto_);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
- "7.5.0",
+ "7.7.0",
 "Kv1",
  "gbar_Kv1",
  0,
@@ -274,6 +283,10 @@ extern void _cvode_abstol( Symbol**, double*, int);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
+ #if NMODL_TEXT
+  hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
+  hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
+#endif
   hoc_register_prop_size(_mechtype, 22, 4);
   hoc_register_dparam_semantics(_mechtype, 0, "k_ion");
   hoc_register_dparam_semantics(_mechtype, 1, "k_ion");
@@ -635,3 +648,177 @@ static void _initlists() {
  _slist1[2] = &(h2) - _p;  _dlist1[2] = &(Dh2) - _p;
 _first = 0;
 }
+
+#if NMODL_TEXT
+static const char* nmodl_filename = "/home/trbjrn/Documents/lfpy_master_thesis/cell_models/HallermannEtAl2012/Kv1_axonal.mod";
+static const char* nmodl_file_text = 
+  "TITLE Axonal voltage-gated potassium current\n"
+  "\n"
+  "COMMENT\n"
+  "	Hallermann, de Kock, Stuart and Kole, Nature Neuroscience, 2012\n"
+  "	doi:10.1038/nn.3132\n"
+  "	\n"
+  "	n8*h1 + n8*h2 Hodgkin-Huxley model\n"
+  "ENDCOMMENT\n"
+  "\n"
+  "\n"
+  "NEURON {\n"
+  "	SUFFIX Kv1\n"
+  "	USEION k READ ek WRITE ik\n"
+  "	RANGE gkv1, ikv1, gbar\n"
+  "	GLOBAL ninf, ntau\n"
+  "	GLOBAL h1inf, h1tau\n"
+  "	GLOBAL h2inf, h2tau\n"
+  "	GLOBAL h3inf, h3tau\n"
+  "}\n"
+  "\n"
+  "UNITS {\n"
+  "	(mV) = (millivolt)\n"
+  "	(mA) = (milliamp)\n"
+  "	(nA) = (nanoamp)\n"
+  "	(pA) = (picoamp)\n"
+  "	(S)  = (siemens)\n"
+  "	(nS) = (nanosiemens)\n"
+  "	(pS) = (picosiemens)\n"
+  "	(um) = (micron)\n"
+  "	(molar) = (1/liter)\n"
+  "	(mM) = (millimolar)		\n"
+  "}\n"
+  "\n"
+  "\n"
+  "CONSTANT {\n"
+  ":	ek = -98 (mV)\n"
+  "	a1 = 48.02279\n"
+  "	a2 = 42.662\n"
+  "	b1 = 58.44509\n"
+  "	c1 = 13.44182\n"
+  "	c2 = 49.38797\n"
+  "\n"
+  "	a1H1 = 1.300293e-03\n"
+  "	a2H1 = 6.247311\n"
+  "	b2H1 = 66.13843\n"
+  "	c1H1 = 8.611435\n"
+  "	c2H1 = 7.948768\n"
+  "\n"
+  "	a12H2fact = 1.554639e-02\n"
+  "	propH2 = 0.73157\n"
+  "	sToMs = 0.001\n"
+  "}\n"
+  "\n"
+  "\n"
+  "PARAMETER {\n"
+  "	v (mV)\n"
+  "\n"
+  "	vShift = 0\n"
+  "	vShift_inact = 0\n"
+  "	gbar (pS/um2)\n"
+  "	temp = 33	(degC)		: original temp \n"
+  "	q10  = 3			: temperature sensitivity\n"
+  "	q10h  = 3			: temperature sensitivity for inactivation\n"
+  "	celsius		(degC)\n"
+  "}\n"
+  "\n"
+  "\n"
+  "ASSIGNED {\n"
+  " 	ik (mA/cm2) \n"
+  " 	ikv1 (mA/cm2) \n"
+  "	gkv1  (mho/cm2)\n"
+  "	ek (mV)\n"
+  "\n"
+  "	ninf\n"
+  "	ntau (ms)\n"
+  "	nalpha (1/ms)\n"
+  "	nbeta (1/ms)\n"
+  "\n"
+  "	h1inf\n"
+  "	h1tau (ms)\n"
+  "	h1alpha (1/ms)\n"
+  "	h1beta (1/ms)\n"
+  "\n"
+  "	h2inf\n"
+  "	h2tau (ms)\n"
+  "	h2alpha (1/ms)\n"
+  "	h2beta (1/ms)\n"
+  "\n"
+  "	h3inf\n"
+  "	h3tau (ms)\n"
+  "	h3alpha (1/ms)\n"
+  "	h3beta (1/ms)\n"
+  "\n"
+  "	tadj\n"
+  "	tadjh\n"
+  "}\n"
+  "\n"
+  "STATE { \n"
+  "	n\n"
+  "	h1\n"
+  "	h2\n"
+  "}\n"
+  "\n"
+  "INITIAL {\n"
+  "	rates(v)\n"
+  "	n = ninf\n"
+  "	h1 = h1inf\n"
+  "	h2 = h2inf\n"
+  "}\n"
+  "\n"
+  "BREAKPOINT {\n"
+  "	SOLVE states METHOD cnexp\n"
+  "      	gkv1 = gbar * ( (1-propH2)*n^8*h1 + propH2*n^8*h2 )\n"
+  "	ikv1 = (1e-4)*gkv1 * (v - ek)\n"
+  "	ik = ikv1\n"
+  "}\n"
+  "\n"
+  "DERIVATIVE states {\n"
+  "	rates(v)\n"
+  "	n' = (ninf-n)/ntau\n"
+  "	h1' = (h1inf-h1)/h1tau \n"
+  "	h2' = (h2inf-h2)/h2tau \n"
+  "}\n"
+  "\n"
+  "PROCEDURE rates(v (mV)) {\n"
+  "\n"
+  "	tadj = q10^((celsius - temp)/10)\n"
+  "	tadjh = q10h^((celsius - temp)/10)\n"
+  "\n"
+  "	nalpha = tadj*nalphafkt(v-vShift)\n"
+  "	nbeta = tadj*nbetafkt(v-vShift)\n"
+  "	ninf = nalpha/(nalpha+nbeta) \n"
+  "	ntau = 1/(nalpha + nbeta)\n"
+  "\n"
+  "	h1alpha = tadjh*h1alphafkt(v-vShift-vShift_inact)\n"
+  "	h1beta = tadjh*h1betafkt(v-vShift-vShift_inact)\n"
+  "	h1inf = h1alpha/(h1alpha+h1beta) \n"
+  "	h1tau = 1/(h1alpha + h1beta)\n"
+  "\n"
+  "	h2alpha = tadjh*h2alphafkt(v-vShift-vShift_inact)\n"
+  "	h2beta = tadjh*h2betafkt(v-vShift-vShift_inact)\n"
+  "	h2inf = h2alpha/(h2alpha+h2beta) \n"
+  "	h2tau = 1/(h2alpha + h2beta)\n"
+  "}\n"
+  "\n"
+  "FUNCTION nalphafkt(v (mV)) (1/ms) {\n"
+  "	nalphafkt = sToMs * a1*(-(v+b1))/( exp(-(v+b1)/c1) -1)\n"
+  "}\n"
+  "\n"
+  "FUNCTION nbetafkt(v (mV)) (1/ms) {\n"
+  "	nbetafkt = sToMs * a2*exp(-(v)/c2)\n"
+  "}\n"
+  "\n"
+  "FUNCTION h1alphafkt(v (mV)) (1/ms) {\n"
+  "	h1alphafkt = sToMs * a1H1*exp(-(v)/c1H1)\n"
+  "}\n"
+  "\n"
+  "FUNCTION h1betafkt(v (mV)) (1/ms) {\n"
+  "	h1betafkt = sToMs * a2H1/(exp(-(v+b2H1)/c2H1)+1)\n"
+  "}\n"
+  "\n"
+  "FUNCTION h2alphafkt(v (mV)) (1/ms) {\n"
+  "	h2alphafkt = sToMs * a12H2fact*a1H1*exp(-(v)/c1H1)\n"
+  "}\n"
+  "\n"
+  "FUNCTION h2betafkt(v (mV)) (1/ms) {\n"
+  "	h2betafkt = sToMs * a12H2fact*a2H1/(exp(-(v+b2H1)/c2H1)+1)\n"
+  "}\n"
+  ;
+#endif

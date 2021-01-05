@@ -1,4 +1,4 @@
-/* Created by Language version: 7.5.0 */
+/* Created by Language version: 7.7.0 */
 /* VECTORIZED */
 #define NRN_VECTORIZED 1
 #include <stdio.h>
@@ -77,6 +77,15 @@ extern void hoc_register_limits(int, HocParmLimits*);
 extern void hoc_register_units(int, HocParmUnits*);
 extern void nrn_promote(Prop*, int, int);
 extern Memb_func* memb_func;
+ 
+#define NMODL_TEXT 1
+#if NMODL_TEXT
+static const char* nmodl_file_text;
+static const char* nmodl_filename;
+extern void hoc_reg_nmodl_text(int, const char*);
+extern void hoc_reg_nmodl_filename(int, const char*);
+#endif
+
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
  _extcall_prop = _prop;
@@ -137,7 +146,7 @@ static void _ode_matsol(_NrnThread*, _Memb_list*, int);
  static void _ode_matsol_instance1(_threadargsproto_);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
- "7.5.0",
+ "7.7.0",
 "ih",
  "gbar_ih",
  0,
@@ -180,6 +189,10 @@ extern void _cvode_abstol( Symbol**, double*, int);
  	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 1);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
+ #if NMODL_TEXT
+  hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
+  hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
+#endif
   hoc_register_prop_size(_mechtype, 6, 1);
   hoc_register_dparam_semantics(_mechtype, 0, "cvodeieq");
  	hoc_register_cvode(_mechtype, _ode_count, _ode_map, _ode_spec, _ode_matsol);
@@ -434,4 +447,72 @@ _first = 0;
 
 #if defined(__cplusplus)
 } /* extern "C" */
+#endif
+
+#if NMODL_TEXT
+static const char* nmodl_filename = "/home/trbjrn/Documents/lfpy_master_thesis/cell_models/HallermannEtAl2012/h.mod";
+static const char* nmodl_file_text = 
+  "TITLE Ih-current\n"
+  "\n"
+  "UNITS {\n"
+  "	(mA) = (milliamp)\n"
+  "	(mV) = (millivolt)\n"
+  "     (mM) = (milli/liter)\n"
+  "\n"
+  "}\n"
+  "\n"
+  "INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}\n"
+  "\n"
+  "PARAMETER {\n"
+  "	dt (ms)\n"
+  "	v (mV)\n"
+  "     eh = -47  (mV) 		:ih-reversal potential by Berger	  \n"
+  "	gbar = 0.00015 (mho/cm2)	:density on dendrite assuming 150pA current and 				150mV driving force (=200pS/um2)\n"
+  "	\n"
+  "}\n"
+  "\n"
+  "\n"
+  "NEURON {\n"
+  "	SUFFIX ih\n"
+  "	NONSPECIFIC_CURRENT Ih\n"
+  "	RANGE Ih,gbar\n"
+  "}\n"
+  "\n"
+  "STATE {\n"
+  "	h\n"
+  "}\n"
+  "\n"
+  "ASSIGNED {\n"
+  "	Ih (mA/cm2)\n"
+  "}\n"
+  "\n"
+  "INITIAL {\n"
+  "	h=alpha(v)/(beta(v)+alpha(v))\n"
+  "}\n"
+  "\n"
+  "BREAKPOINT {\n"
+  "	SOLVE state METHOD cnexp\n"
+  "	Ih = gbar*h*(v-eh)\n"
+  "}\n"
+  "\n"
+  "FUNCTION alpha(v(mV)) {\n"
+  "	alpha = 0.001*6.43*(v+154.9)/(exp((v+154.9)/11.9)-1)			:parameters are estimated by direct fitting of HH model to activation time constants and voltage actication curve recorded at  34C by M. Kole\n"
+  "}\n"
+  "\n"
+  "FUNCTION beta(v(mV)) {\n"
+  "	beta = 0.001*193*exp(v/33.1)			\n"
+  "}\n"
+  "\n"
+  "DERIVATIVE state {     : exact when v held constant; integrates over dt step\n"
+  "	h' = (1-h)*alpha(v) - h*beta(v)\n"
+  "}\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  ;
 #endif
