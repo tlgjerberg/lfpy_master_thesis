@@ -8,9 +8,14 @@ import LFPy
 import os
 from os.path import join
 import sys
+from mpi4py import MPI
+
+COMM = MPI.COMM_WORLD
+SIZE = COMM.Get_size()
+RANK = COMM.Get_rank()
+
 
 """
-
 Improve plotting
 
 Add method for running over a set of electrode positions and current amplitudes
@@ -27,15 +32,20 @@ Improve plot_cellsim_alt for easy reading and page formatting.
 
 """
 
-cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+if RANK == 0:
+    cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+    current_amps = [-1e4]  # uA
+    positions = [np.array([[0, 0, -50], ], dtype=float),
+                 np.array([[0, 0, -100], ], dtype=float),
+                 np.array([[0, 0, -200], ], dtype=float),
+                 np.array([[0, 0, -400], ], dtype=float),
+                 np.array([[0, 0, -500], ], dtype=float)]
 
+    COMM.bcast(cell_models_folder)
+    COMM.bcast(current_amps)
+    COMM.scatter(positions)
 # Test parameters
-current_amps = [-1e4]  # uA
-positions = [np.array([[0, 0, -50], ], dtype=float),
-             np.array([[0, 0, -100], ], dtype=float),
-             np.array([[0, 0, -200], ], dtype=float),
-             np.array([[0, 0, -400], ], dtype=float),
-             np.array([[0, 0, -500], ], dtype=float)]
+
 
 axon_measure_idxs = np.array(
     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])

@@ -9,11 +9,7 @@ import sys
 import time
 from os.path import join
 from matplotlib.patches import Ellipse
-from mpi4py import MPI
 
-COMM = MPI.COMM_WORLD
-SIZE = COMM.Get_size()
-RANK = COMM.Get_rank()
 
 """
  transmembrane current i soma/utvalgte punkter som func av tid x
