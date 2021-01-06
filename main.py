@@ -243,12 +243,12 @@ class ExternalPotentialSim:
     def plot_morphology(self):
 
         # Defining figure frame and parameters
-        self.fig.subplots_adjust(hspace=0.5, left=0.0, wspace=0.5, right=0.96,
+        self.fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
                                  top=0.9, bottom=0.1)
 
         # Adding axes with appropriate parameters
-        ax_m = self.fig.add_axes(self.morph_ax_params, aspect=1, frameon=False,
-                                 xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
+        self.ax_m = self.fig.add_axes(self.morph_ax_params, aspect=1, frameon=False,
+                                      xticks=[], yticks=[], ylim=[-700, 1100], xlim=[-300, 300])
 
         # Names of different neuron parts and color codings for each
         possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
@@ -277,54 +277,58 @@ class ExternalPotentialSim:
                     if not ax_name in used_clrs:
                         used_clrs.append(ax_name)
 
-            ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
-                      [self.cell.zstart[idx], self.cell.zend[idx]], '-',
-                      c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)
+            self.ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
+                           [self.cell.zstart[idx], self.cell.zend[idx]], '-',
+                           c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)
 
         lines = []
         for name in used_clrs:
-            l, = ax_m.plot([0], [0], lw=2, c=sec_clrs[name])
+            l, = self.ax_m.plot([0], [0], lw=2, c=sec_clrs[name])
             lines.append(l)
-        ax_m.legend(lines, used_clrs, frameon=False,
-                    fontsize=8, loc=(0.05, 0.0), ncol=2)
+        self.ax_m.legend(lines, used_clrs, frameon=False,
+                         fontsize=8, loc=(0.05, 0.0), ncol=2)
 
         # Plotting dots at the middle of a given section in its given color
-        [ax_m.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o',
-                   c=self.cell_plot_colors[idx], ms=13) for idx in self.cell_plot_idxs]
+        [self.ax_m.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o',
+                        c=self.cell_plot_colors[idx], ms=13) for idx in self.cell_plot_idxs]
 
-        ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
-                  fontsize=9, ha='center')
+        self.ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
+                       fontsize=9, ha='center')
 
         for e_idx in range(len(self.elec_params["positions"])):
             ellipse_pos = [self.elec_params["positions"][e_idx]
                            [0], self.elec_params["positions"][e_idx][2]]
 
-            ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
-                                    height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
+            self.ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
+                                         height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
     def plot_external_field(self):
         # Adding external field visualization to cell morphology figure
-        v_field_ext = np.zeros((100, 200))
-        xf = np.linspace(-500, 500, 100)
-        zf = np.linspace(-500, 1000, 200)
-        # xf = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
-        # zf = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        v_field_ext = np.zeros((200, 200))
+        x = np.linspace(-500, 500, 200)
+        z = np.linspace(-500, 1000, 200)
+        # x = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
+        # z = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        xf, zf = np.meshgrid(x, z)
 
-        for xidx, x in enumerate(xf):
+        for xidx, xi in enumerate(x):
 
-            for zidx, z in enumerate(zf):
+            for zidx, zi in enumerate(z):
 
-                v_field_ext[xidx, zidx] = self.ext_field(
-                    x, 0, z) * self.amp
+                v_field_ext[xidx, zidx] = self.ext_field(xi, 0, zi) * self.amp
 
         vmax = np.max(np.abs(v_field_ext)) / 5
-        ax_cb = plt.gca()
-        im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-                            origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
-
-        divider = make_axes_locatable(ax_cb)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im_p, cax=cax, label='mV')
+        # ax_cb = plt.gca()
+        # im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
+        #                     origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
+        #
+        # divider = make_axes_locatable(ax_cb)
+        # cax = divider.append_axes("right", size="5%", pad=0.05)
+        # plt.colorbar(im_p, cax=cax, label='mV')
+        ext_field_im = self.ax_m.pcolormesh(
+            xf, zf, v_field_ext, vmin=-vmax, vmax=vmax, shading='auto')
+        self.fig.colorbar(ext_field_im, ax=self.ax_m)
+        # plt.show()
 
     def plot_membrane_potential(self, placement):
 
@@ -349,7 +353,7 @@ class ExternalPotentialSim:
 
     def plot_cellsim(self):
         # Simulating cell after all parameters and field has been added
-        self.fig = plt.figure(figsize=[18, 8])
+        self.fig = plt.figure(figsize=[10, 8])
 
         # for m in self.measure_pnts:
         #     print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))

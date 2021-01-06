@@ -11,12 +11,13 @@ import sys
 import time
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+cellsim_Hallermann_params['save_folder_name'] = 'Hallermann_ext_pot_test'
 
 extPotSim = ExternalPotentialSim(cellsim_Hallermann_params)
 
 
 # Test parameters
-current_amps = [2e4, -2e4, 1e4, -1e4, -8e3, 8e3, -7e3, 7e3, -5e3, 5e3]  # uA
+# current_amps = [2e4, -2e4, 1e4, -1e4, -8e3, 8e3, -7e3, 7e3, -5e3, 5e3]  # uA
 elec_positions = [np.array([[50, 0, -200], ], dtype=float),
                   np.array([[111, 131, 652], ], dtype=float),
                   np.array([[-200, 0, 0], ], dtype=float)]
@@ -27,7 +28,7 @@ elec_positions = [np.array([[50, 0, -200], ], dtype=float),
 #                   np.array([[-200, 0, 0], ], dtype=float),
 #                   np.array([[50, 40, 120], ], dtype=float)]
 
-# current_amps = [1e5, -1e5]
+current_amps = [1e4, -1e4]
 # elec_positions = [np.array([[-242, 7, 929], ], dtype=float)]
 
 measure_coordinates = np.array([[0, 0, -200], [130, 131, 652],
