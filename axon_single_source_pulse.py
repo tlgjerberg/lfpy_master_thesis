@@ -32,21 +32,42 @@ Improve plot_cellsim_alt for easy reading and page formatting.
 
 """
 
-if RANK == 0:
-    cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-    current_amps = [-1e4]  # uA
-    positions = [np.array([[0, 0, -50], ], dtype=float),
-                 np.array([[0, 0, -100], ], dtype=float),
-                 np.array([[0, 0, -200], ], dtype=float),
-                 np.array([[0, 0, -400], ], dtype=float),
-                 np.array([[0, 0, -500], ], dtype=float)]
+# if RANK == 0:
+#     cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+#     current_amps = [-1e4]  # uA
+#     positions = [np.array([[0, 0, -50], ], dtype=float),
+#                  np.array([[0, 0, -100], ], dtype=float),
+#                  np.array([[0, 0, -200], ], dtype=float),
+#                  np.array([[0, 0, -400], ], dtype=float),
+#                  np.array([[0, 0, -500], ], dtype=float)]
+#     print(positions[0].shape)
+#     cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
+#     axon_measure_idxs = np.array(
+#         [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
+#     monophasic_pulse_params['stop_time'] = 200
+#
+# else:
+#     cell_models_folder = None
+#     current_amps = None  # uA
+#     positions = None
+#     axon_measure_idxs = None
+#
+# COMM.bcast(cell_models_folder, root=0)
+# COMM.bcast(current_amps, root=0)
+# COMM.bcast(monophasic_pulse_params, root=0)
+# COMM.bcast(cellsim_bisc_stick_params, root=0)
+# COMM.scatter(positions, root=0)
+# # Test parameters
 
-    COMM.bcast(cell_models_folder)
-    COMM.bcast(current_amps)
-    COMM.scatter(positions)
-# Test parameters
-
-
+cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+current_amps = [-1e4]  # uA
+positions = [np.array([0, 0, -50], dtype=float),
+             np.array([0, 0, -100], dtype=float),
+             np.array([0, 0, -200], dtype=float),
+             np.array([0, 0, -400], dtype=float),
+             np.array([0, 0, -500], dtype=float)]
+print(positions[0].shape)
+cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
 axon_measure_idxs = np.array(
     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
 monophasic_pulse_params['stop_time'] = 200

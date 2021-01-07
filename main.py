@@ -135,7 +135,7 @@ class ExternalPotentialSim:
         self.elec_params = elec_params
         self.amp = elec_params['pulse_amp']  # External current amplitide
         # Electrode position
-        self.x0, self.y0, self.z0 = elec_params['positions'][0]
+        self.x0, self.y0, self.z0 = elec_params['positions']
         sigma = elec_params['sigma']
         self.start_time = elec_params['start_time']
         self.stop_time = elec_params['stop_time']
@@ -229,7 +229,7 @@ class ExternalPotentialSim:
         if not passive:
             neuron.h('forall insert hh')
 
-        elec_params['positions'] = positions[0]
+        elec_params['positions'] = positions
         elec_params['pulse_amp'] = current_amps
 
         self.extra_cellular_stimuli(elec_params)
@@ -291,12 +291,15 @@ class ExternalPotentialSim:
         self.ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
                        fontsize=9, ha='center')
 
-        for e_idx in range(len(self.elec_params["positions"])):
-            ellipse_pos = [self.elec_params["positions"][e_idx]
-                           [0], self.elec_params["positions"][e_idx][2]]
+        # for e_idx in range(len(self.elec_params["positions"])):
+        #     ellipse_pos = [self.elec_params["positions"][e_idx]
+        #                    [0], self.elec_params["positions"][e_idx][2]]
+        print(self.elec_params["positions"])
+        ellipse_pos = [self.elec_params["positions"]
+                       [0], self.elec_params["positions"][2]]
 
-            self.ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
-                                         height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
+        self.ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
+                                     height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
     def plot_external_field(self):
         # Adding external field visualization to cell morphology figure
