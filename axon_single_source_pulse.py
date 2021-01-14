@@ -31,46 +31,53 @@ Create figure of axial current over distance along axon. Use simple stick model.
 Improve plot_cellsim_alt for easy reading and page formatting.
 
 """
-
-# if RANK == 0:
-#     cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-#     current_amps = [-1e4]  # uA
-#     positions = [np.array([[0, 0, -50], ], dtype=float),
-#                  np.array([[0, 0, -100], ], dtype=float),
-#                  np.array([[0, 0, -200], ], dtype=float),
-#                  np.array([[0, 0, -400], ], dtype=float),
-#                  np.array([[0, 0, -500], ], dtype=float)]
-#     print(positions[0].shape)
-#     cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
-#     axon_measure_idxs = np.array(
-#         [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
-#     monophasic_pulse_params['stop_time'] = 200
-#
-# else:
-#     cell_models_folder = None
-#     current_amps = None  # uA
-#     positions = None
-#     axon_measure_idxs = None
-#
-# COMM.bcast(cell_models_folder, root=0)
-# COMM.bcast(current_amps, root=0)
-# COMM.bcast(monophasic_pulse_params, root=0)
-# COMM.bcast(cellsim_bisc_stick_params, root=0)
-# COMM.scatter(positions, root=0)
-# # Test parameters
-
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 current_amps = [-1e4]  # uA
-positions = [np.array([0, 0, -50], dtype=float),
-             np.array([0, 0, -100], dtype=float),
-             np.array([0, 0, -200], dtype=float),
-             np.array([0, 0, -400], dtype=float),
-             np.array([0, 0, -500], dtype=float)]
-print(positions[0].shape)
+positions = np.array([[0, 0, -50],
+                      [0, 0, -100],
+                      [0, 0, -200],
+                      [0, 0, -400],
+                      [0, 0, -500]], dtype=float)
+print(positions.shape)
 cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
 axon_measure_idxs = np.array(
     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
 monophasic_pulse_params['stop_time'] = 200
+
+if RANK == 0:
+    sendbuf = positions
+
+
+else:
+    cell_models_folder = None
+    current_amps = None  # uA
+    positions = None
+    axon_measure_idxs = None
+
+
+COMM.bcast(cell_models_folder, root=0)
+COMM.bcast(current_amps, root=0)
+COMM.bcast(monophasic_pulse_params, root=0)
+COMM.bcast(cellsim_bisc_stick_params, root=0)
+
+recvbuf = np.empty(3, dtype='float')
+COMM.Scatter(positions, recvbuf, root=0)
+
+positions = recvbuf
+# # Test parameters
+
+# cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+# current_amps = [-1e4]  # uA
+# positions = np.array([np.array([0, 0, -50], dtype=float),
+#                       np.array([0, 0, -100], dtype=float),
+#                       np.array([0, 0, -200], dtype=float),
+#                       np.array([0, 0, -400], dtype=float),
+#                       np.array([0, 0, -500], dtype=float)])
+
+# cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
+# axon_measure_idxs = np.array(
+#     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
+# monophasic_pulse_params['stop_time'] = 200
 
 extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
 

@@ -9,6 +9,7 @@ import sys
 import time
 from os.path import join
 from matplotlib.patches import Ellipse
+from matplotlib.cm import ScalarMappable
 
 
 """
@@ -105,8 +106,12 @@ class ExternalPotentialSim:
             # self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
 
     def create_measure_points(self, coords):
-
+        """
+        Setting measurement of membrane potential in compartments closest to
+        coordinates.
+        """
         measure_pnts = []
+        self.elec_positions = []
 
         for i in range(coords.shape[0]):
             x, y, z = coords[i, :]
@@ -117,16 +122,16 @@ class ExternalPotentialSim:
 
         # Automatically setting electrode at a given distance from the measurement points
         if self.cell_name == 'Hallermann':
-            self.elec_positions = []
+
             for mp in self.measure_pnts:
                 self.elec_positions.append(
-                    np.array([[int(self.cell.xmid[mp]) - 50, int(self.cell.ymid[mp]),
-                               int(self.cell.zmid[mp])], ], dtype=float))
+                    np.array([int(self.cell.xmid[mp]) - 50, int(self.cell.ymid[mp]),
+                              int(self.cell.zmid[mp])], dtype=float))
 
     def _calc_point_sources_field(self, elec_params):
         pass
 
-    def extra_cellular_stimuli(self, elec_params):
+    def extracellular_stimuli(self, elec_params):
         """
         Parameters: LFPy Cell object, dict of electrode parameters
 
@@ -135,6 +140,7 @@ class ExternalPotentialSim:
         self.elec_params = elec_params
         self.amp = elec_params['pulse_amp']  # External current amplitide
         # Electrode position
+        print('ex_stim', elec_params['positions'])
         self.x0, self.y0, self.z0 = elec_params['positions']
         sigma = elec_params['sigma']
         self.start_time = elec_params['start_time']
@@ -167,6 +173,9 @@ class ExternalPotentialSim:
         self.cell.simulate(rec_vmem=True, rec_imem=True)
 
     def _find_steady_state(self):
+        """
+        Detect steady state potential
+        """
         self.v_ss = np.max(self.cell.vmem)
         self.v_ss_idx = np.argmax(self.cell.vmem)
         find_diff = np.diff(self.cell.vmem)
@@ -191,11 +200,10 @@ class ExternalPotentialSim:
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, coords, stop_time, passive=False):
 
         self.return_cell(cell_models_folder, passive)
-        self.elec_positions = positions
-        elec_dists = np.zeros((len(positions), coords.shape[0]))
-        ss_pot = np.zeros(len(positions))
-        dV = np.zeros(len(positions))
         self.create_measure_points(coords)
+        elec_dists = np.zeros((len(self.elec_positions), coords.shape[0]))
+        ss_pot = np.zeros(len(self.elec_positions))
+        dV = np.zeros(len(self.elec_positions))
         # Neuron activation after cell object has been created
 
         for I in current_amps:
@@ -203,9 +211,9 @@ class ExternalPotentialSim:
             elec_params['pulse_amp'] = I
 
             for idx, pos in enumerate(self.elec_positions):
-
+                print('idx', idx)
                 elec_params['positions'] = pos
-                self.extra_cellular_stimuli(elec_params)
+                self.extracellular_stimuli(elec_params)
                 self.run_cell_simulation()
                 self.plot_cellsim()
                 self._find_steady_state()
@@ -232,7 +240,7 @@ class ExternalPotentialSim:
         elec_params['positions'] = positions
         elec_params['pulse_amp'] = current_amps
 
-        self.extra_cellular_stimuli(elec_params)
+        self.extracellular_stimuli(elec_params)
         self.run_cell_simulation()
         self.plot_currents()
 
@@ -294,7 +302,7 @@ class ExternalPotentialSim:
         # for e_idx in range(len(self.elec_params["positions"])):
         #     ellipse_pos = [self.elec_params["positions"][e_idx]
         #                    [0], self.elec_params["positions"][e_idx][2]]
-        print(self.elec_params["positions"])
+        # print(self.elec_params["positions"])
         ellipse_pos = [self.elec_params["positions"]
                        [0], self.elec_params["positions"][2]]
 
@@ -321,12 +329,13 @@ class ExternalPotentialSim:
         # im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
         #                     origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
         #
-        # divider = make_axes_locatable(ax_cb)
-        # cax = divider.append_axes("right", size="5%", pad=0.05)
+        divider = make_axes_locatable(self.ax_m)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
         # plt.colorbar(im_p, cax=cax, label='mV')
         ext_field_im = self.ax_m.pcolormesh(
-            xf, zf, v_field_ext, vmin=-vmax, vmax=vmax, shading='auto')
-        self.fig.colorbar(ext_field_im, ax=self.ax_m)
+            xf, zf, v_field_ext.T, cmap='bwr', vmin=-vmax, vmax=vmax, shading='auto')
+        self.fig.colorbar(ScalarMappable(
+            norm=None, cmap='bwr'), cax=cax, ax=self.ax_m)
         # plt.show()
 
     def plot_membrane_potential(self, placement):
@@ -363,11 +372,13 @@ class ExternalPotentialSim:
         self.cell_plot_colors = idx_clr = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
-        self.morph_ax_params = [-0.01, 0.05, 0.2, 0.90]
+        # Setting size and location of plotted morphology
+        self.morph_ax_params = [0.1, 0.05, 0.2, 0.90]
 
         self.plot_morphology()
         self.plot_external_field()
 
+        # # Setting size and location of plotted potentials and current
         ax_top = 0.90
         ax_h = 0.30
         ax_w = 0.6
