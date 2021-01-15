@@ -10,7 +10,7 @@ import time
 from os.path import join
 from matplotlib.patches import Ellipse
 from matplotlib.cm import ScalarMappable
-
+from mpi4py import MPI
 
 """
  transmembrane current i soma/utvalgte punkter som func av tid x
@@ -198,7 +198,6 @@ class ExternalPotentialSim:
         pass
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, coords, stop_time, passive=False):
-
         self.return_cell(cell_models_folder, passive)
         self.create_measure_points(coords)
         elec_dists = np.zeros((len(self.elec_positions), coords.shape[0]))

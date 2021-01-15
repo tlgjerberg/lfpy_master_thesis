@@ -36,8 +36,9 @@ current_amps = [-1e4]  # uA
 positions = np.array([[0, 0, -50],
                       [0, 0, -100],
                       [0, 0, -200],
-                      [0, 0, -400],
-                      [0, 0, -500]], dtype=float)
+                      [0, 0, -400]], dtype=float)
+# ,
+#[0, 0, -500]
 print(positions.shape)
 cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
 axon_measure_idxs = np.array(
@@ -78,8 +79,9 @@ positions = recvbuf
 # axon_measure_idxs = np.array(
 #     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
 # monophasic_pulse_params['stop_time'] = 200
-
+print('Rank', RANK)
 extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
 
 extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
                       positions, axon_measure_idxs, 200, passive=True)
+assert np.allclose(recvbuf, RANK)
