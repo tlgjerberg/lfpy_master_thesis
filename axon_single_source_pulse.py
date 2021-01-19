@@ -84,4 +84,4 @@ extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
 
 extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
                       positions, axon_measure_idxs, 200, passive=True)
-assert np.allclose(recvbuf, RANK)
+# assert np.allclose(recvbuf, RANK)
