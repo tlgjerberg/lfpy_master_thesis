@@ -56,11 +56,13 @@ class ExternalPotentialSim:
                 "extracellular": True,
             }
             cell = LFPy.Cell(**cell_parameters)
-            self.cell = cell
+            # self.cell = cell
             self.v_init = cell_parameters['v_init']
             # print(self.cell.zmid[1] - self.cell.zmid[0])
             if not passive:
                 neuron.h('forall insert hh')
+
+            return cell
 
         elif self.cell_name == 'Hallermann':
             model_path = join(cell_models_folder, 'HallermannEtAl2012')
@@ -91,42 +93,49 @@ class ExternalPotentialSim:
                                 join(model_path, 'charge.hoc')]
             }
             cell = LFPy.Cell(**cell_parameters)
-            self.cell = cell
+            # self.cell = cell
             self.v_init = cell_parameters['v_init']
 
             # cell.set_pos(z=-np.max(cell.zend) -
             #              self.cell_dist_to_top, x=self.x_shift)
             # cell.set_rotation(z=self.z_rot)
-            self.cell.set_pos(z=-self.cell_dist_to_top)
+            # self.cell.set_pos(z=-self.cell_dist_to_top)
             # Default rotation
-            self.cell.set_rotation(x=4.729, y=-3.05, z=-3)
+            # self.cell.set_rotation(x=4.729, y=-3.05, z=-3)
             # Axon y-coordinate close to 0
             # self.cell.set_rotation(x=4.9, y=-3.166, z=-3)
             # Apical dendtrite measurement point at aprrox y=0
             # self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
+            cell.set_pos(z=-self.cell_dist_to_top)
+            cell.set_rotation(x=4.729, y=-3.05, z=-3)
+            return cell
 
-    def create_measure_points(self, coords):
+    def create_measure_points(self, cell, coords):
         """
         Setting measurement of membrane potential in compartments closest to
         coordinates.
         """
         measure_pnts = []
-        self.elec_positions = []
 
         for i in range(coords.shape[0]):
             x, y, z = coords[i, :]
-            print(i, self.cell.get_closest_idx(x, y, z))
-            measure_pnts.append(self.cell.get_closest_idx(x, y, z))
+            print(i, cell.get_closest_idx(x, y, z))
+            measure_pnts.append(cell.get_closest_idx(x, y, z))
 
         self.measure_pnts = np.array(measure_pnts)
 
+    def set_electrode_pos(self, cell, elec_positions=[]):
+
         # Automatically setting electrode at a given distance from the measurement points
-        if self.cell_name == 'Hallermann':
+        if not elec_positions:
 
             for mp in self.measure_pnts:
-                self.elec_positions.append(
-                    np.array([int(self.cell.xmid[mp]) - 50, int(self.cell.ymid[mp]),
-                              int(self.cell.zmid[mp])], dtype=float))
+
+                elec_positions.append(
+                    np.array([int(cell.xmid[mp]) - 50, int(cell.ymid[mp]),
+                              int(cell.zmid[mp])], dtype=float))
+
+        return elec_positions
 
     def _calc_point_sources_field(self, elec_params):
         pass
@@ -170,7 +179,7 @@ class ExternalPotentialSim:
         self.cell.insert_v_ext(v_cell_ext, t)
 
     def run_cell_simulation(self):
-        self.cell.simulate(rec_vmem=True, rec_imem=True)
+        cell.simulate(rec_vmem=True, rec_imem=True)
 
     def _find_steady_state(self):
         """
@@ -198,22 +207,24 @@ class ExternalPotentialSim:
         pass
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, coords, stop_time, passive=False):
-        self.return_cell(cell_models_folder, passive)
-        self.create_measure_points(coords)
-        elec_dists = np.zeros((len(self.elec_positions), coords.shape[0]))
-        ss_pot = np.zeros(len(self.elec_positions))
-        dV = np.zeros(len(self.elec_positions))
+        cell_names = []  # List of strings containing cell names
+        elec_positions = []
+        cell = self.return_cell(cell_models_folder, passive)
+        self.create_measure_points(cell, coords)
+        self.set_electrode_pos(cell)
+        elec_dists = np.zeros((len(elec_positions), coords.shape[0]))
+        ss_pot = np.zeros(len(elec_positions))
+        dV = np.zeros(len(elec_positions))
         # Neuron activation after cell object has been created
 
         for I in current_amps:
 
             elec_params['pulse_amp'] = I
 
-            for idx, pos in enumerate(self.elec_positions):
-                print('idx', idx)
+            for idx, pos in enumerate(elec_positions):
                 elec_params['positions'] = pos
                 self.extracellular_stimuli(elec_params)
-                self.run_cell_simulation()
+                self.run_cell_simulation(cell)
                 self.plot_cellsim()
                 self._find_steady_state()
                 ss_pot[idx] = self.v_ss
