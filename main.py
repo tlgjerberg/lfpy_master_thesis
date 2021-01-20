@@ -113,15 +113,15 @@ class ExternalPotentialSim:
             cell.set_rotation(x=4.729, y=-3.05, z=-3)
             return cell
 
-    def create_measure_points(self, cell, coords):
+    def create_measure_points(self, cell, com_coords):
         """
         Setting measurement of membrane potential in compartments closest to
         coordinates.
         """
         measure_pnts = []
 
-        for i in range(coords.shape[0]):
-            x, y, z = coords[i, :]
+        for i in range(com_coords.shape[0]):
+            x, y, z = com_coords[i, :]
             print(i, cell.get_closest_idx(x, y, z))
             measure_pnts.append(cell.get_closest_idx(x, y, z))
 
@@ -151,7 +151,7 @@ class ExternalPotentialSim:
     def _calc_point_sources_field(self, elec_params):
         pass
 
-    def extracellular_stimuli(self, elec_params):
+    def extracellular_stimuli(self, cell, elec_params):
         """
         Parameters: LFPy Cell object, dict of electrode parameters
 
@@ -183,45 +183,45 @@ class ExternalPotentialSim:
         self.pulse[self.start_idx:self.stop_idx] = elec_params['pulse_amp']
 
         # Applying the external field function to the cell simulation
-        v_cell_ext = np.zeros((self.cell.totnsegs, n_tsteps))
-        v_cell_ext[:, :] = self.ext_field(self.cell.xmid, self.cell.ymid, self.cell.zmid).reshape(
-            self.cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
+        v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
+        v_cell_ext[:, :] = self.ext_field(cell.xmid, cell.ymid, cell.zmid).reshape(
+            cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
 
-        self.cell.insert_v_ext(v_cell_ext, t)
+        cell.insert_v_ext(v_cell_ext, t)
 
-    def run_cell_simulation(self):
+    def run_cell_simulation(self, cell):
         cell.simulate(rec_vmem=True, rec_imem=True)
 
-    def _find_steady_state(self):
+    def _find_steady_state(self, cell):
         """
         Detect steady state potential
         """
-        self.v_ss = np.max(self.cell.vmem)
-        self.v_ss_idx = np.argmax(self.cell.vmem)
-        find_diff = np.diff(self.cell.vmem)
+        self.v_ss = np.max(cell.vmem)
+        self.v_ss_idx = np.argmax(cell.vmem)
+        find_diff = np.diff(cell.vmem)
 
-    def _dV(self):
-        self._find_steady_state()
+    def _dV(self, cell):
+        self._find_steady_state(cell)
         self.dV = self.v_ss - self.v_init
 
-    def _record_dist_to_electrode(self, coords):
+    def _record_dist_to_electrode(self, com_coords):
 
-        self.record_dist = np.zeros(coords.shape[0])
+        self.record_dist = np.zeros(com_coords.shape[0])
 
-        for idx in range(coords.shape[0]):
+        for idx in range(com_coords.shape[0]):
             self.record_dist[idx] = np.sum(np.absolute(
-                coords[idx, :] - np.array([self.x0, self.y0, self.z0])))
+                com_coords[idx, :] - np.array([self.x0, self.y0, self.z0])))
 
         return self.record_dist
 
     def find_time_constant(self):
         pass
 
-    def run_ext_sim(self, cell_models_folder, elec_params, current_amps, elec_positions, com_coords, stop_time, passive=False):
+    def run_ext_sim(self, cell_models_folder, elec_params, current_amps,  com_coords, stop_time, elec_positions=np.empty(3), passive=False):
         cell_names = []  # List of strings containing cell names
         cell = self.return_cell(cell_models_folder, passive)
         self.create_measure_points(cell, com_coords)
-        self.set_electrode_pos(cell)
+        elec_positions = self.set_electrode_pos(cell)
         elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
         ss_pot = np.zeros(len(elec_positions))
         dV = np.zeros(len(elec_positions))
@@ -233,18 +233,18 @@ class ExternalPotentialSim:
 
             for idx, pos in enumerate(elec_positions):
                 elec_params['positions'] = pos
-                self.extracellular_stimuli(elec_params)
+                self.extracellular_stimuli(cell, elec_params)
                 self.run_cell_simulation(cell)
-                self.plot_cellsim()
-                self._find_steady_state()
+                self.plot_cellsim(cell)
+                self._find_steady_state(cell)
                 ss_pot[idx] = self.v_ss
-                self._dV()
+                self._dV(cell)
                 dV[idx] = self.dV
-                elec_dists[idx] = self._record_dist_to_electrode(coords)
+                elec_dists[idx] = self._record_dist_to_electrode(com_coords)
 
         self.plot_steady_state(elec_dists[:, 0], ss_pot)
         self.plot_dV(elec_dists[:, 0], dV)
-        self.create_measure_points(coords)
+        self.create_measure_points(cell, com_coords)
 
         # Freeing up some variables
         I = None
@@ -264,7 +264,7 @@ class ExternalPotentialSim:
         self.run_cell_simulation()
         self.plot_currents()
 
-    def plot_morphology(self):
+    def plot_morphology(self, cell):
 
         # Defining figure frame and parameters
         self.fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
@@ -290,8 +290,8 @@ class ExternalPotentialSim:
 
         # PLOTTING CELL MORPHOLOGY
         # Sets each segment to the color matching the name set by sec_clrs
-        for idx in range(self.cell.totnsegs):
-            sec_name = self.cell.get_idx_name(idx)[1]
+        for idx in range(cell.totnsegs):
+            sec_name = cell.get_idx_name(idx)[1]
             # print(sec_name)
             # c = 'k'
             for ax_name in possible_names:
@@ -301,9 +301,9 @@ class ExternalPotentialSim:
                     if not ax_name in used_clrs:
                         used_clrs.append(ax_name)
 
-            self.ax_m.plot([self.cell.xstart[idx], self.cell.xend[idx]],
-                           [self.cell.zstart[idx], self.cell.zend[idx]], '-',
-                           c=c, clip_on=True, lw=np.sqrt(self.cell.diam[idx]) * 1)
+            self.ax_m.plot([cell.xstart[idx], cell.xend[idx]],
+                           [cell.zstart[idx], cell.zend[idx]], '-',
+                           c=c, clip_on=True, lw=np.sqrt(cell.diam[idx]) * 1)
 
         lines = []
         for name in used_clrs:
@@ -313,7 +313,7 @@ class ExternalPotentialSim:
                          fontsize=8, loc=(0.05, 0.0), ncol=2)
 
         # Plotting dots at the middle of a given section in its given color
-        [self.ax_m.plot(self.cell.xmid[idx], self.cell.zmid[idx], 'o',
+        [self.ax_m.plot(cell.xmid[idx], cell.zmid[idx], 'o',
                         c=self.cell_plot_colors[idx], ms=13) for idx in self.cell_plot_idxs]
 
         self.ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
@@ -329,13 +329,13 @@ class ExternalPotentialSim:
         self.ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
                                      height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
-    def plot_external_field(self):
+    def plot_external_field(self, cell):
         # Adding external field visualization to cell morphology figure
         v_field_ext = np.zeros((200, 200))
         x = np.linspace(-500, 500, 200)
         z = np.linspace(-500, 1000, 200)
-        # x = np.linspace(np.min(self.cell.xend), np.max(self.cell.xend), 50)
-        # z = np.linspace(np.min(self.cell.zend), np.max(self.cell.zend), 200)
+        # x = np.linspace(np.min(cell.xend), np.max(cell.xend), 50)
+        # z = np.linspace(np.min(cell.zend), np.max(cell.zend), 200)
         xf, zf = np.meshgrid(x, z)
 
         for xidx, xi in enumerate(x):
@@ -358,7 +358,7 @@ class ExternalPotentialSim:
             norm=None, cmap='bwr'), cax=cax, ax=self.ax_m)
         # plt.show()
 
-    def plot_membrane_potential(self, placement):
+    def plot_membrane_potential(self, cell, placement):
 
         ax_vm = self.fig.add_axes(placement,  # ylim=[-120, 50],
                                   xlim=[0, self.tstop], xlabel="Time (ms)")
@@ -366,25 +366,25 @@ class ExternalPotentialSim:
         ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
 
         # if type(self.spike_time_idxs) == int:
-        #     ax_vm.axvline(self.cell.tvec[self.spike_time_idxs], c='r', ls='--')
+        #     ax_vm.axvline(cell.tvec[self.spike_time_idxs], c='r', ls='--')
 
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
-        [ax_vm.plot(self.cell.tvec, self.cell.vmem[idx],
+        [ax_vm.plot(cell.tvec, cell.vmem[idx],
                     c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
 
-    def plot_current_pulse(self, placement):
+    def plot_current_pulse(self, cell, placement):
 
         ax_stim = self.fig.add_axes(placement, xlim=[0, self.tstop],
                                     ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
         # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
-        ax_stim.plot(self.cell.tvec, self.pulse / 1000, lw=0.5)
+        ax_stim.plot(cell.tvec, self.pulse / 1000, lw=0.5)
 
-    def plot_cellsim(self):
+    def plot_cellsim(self, cell):
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[10, 8])
 
         # for m in self.measure_pnts:
-        #     print((self.cell.xmid[m], self.cell.ymid[m], self.cell.zmid[m]))
+        #     print((cell.xmid[m], cell.ymid[m], cell.zmid[m]))
 
         self.cell_plot_idxs = self.measure_pnts.astype(
             dtype='int')  # List of measurement points
@@ -395,8 +395,8 @@ class ExternalPotentialSim:
         # Setting size and location of plotted morphology
         self.morph_ax_params = [0.1, 0.05, 0.2, 0.90]
 
-        self.plot_morphology()
-        self.plot_external_field()
+        self.plot_morphology(cell)
+        self.plot_external_field(cell)
 
         # # Setting size and location of plotted potentials and current
         ax_top = 0.90
@@ -406,8 +406,8 @@ class ExternalPotentialSim:
         stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
         mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
 
-        self.plot_membrane_potential(mem_axes_placement)
-        self.plot_current_pulse(stim_axes_placement)
+        self.plot_membrane_potential(cell, mem_axes_placement)
+        self.plot_current_pulse(cell, stim_axes_placement)
 
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
@@ -447,7 +447,7 @@ class ExternalPotentialSim:
         fig.savefig(
             join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
 
-    def plot_currents(self):
+    def plot_currents(self, cell):
 
         # Midpoint index for pulse as an extra test point in time
         self.mid_idx = (self.stop_idx + self.start_idx) // 2
@@ -457,7 +457,7 @@ class ExternalPotentialSim:
             [self.start_idx + 1, self.mid_idx, self.stop_idx])
 
         # Extracting axial currents and their coordinates
-        ax_current, _, pos_coord = self.cell.get_axial_currents_from_vmem(
+        ax_current, _, pos_coord = cell.get_axial_currents_from_vmem(
             timepoints=timepoints)
 
         save_folder = 'axon_bisc_currents'
@@ -486,22 +486,22 @@ class ExternalPotentialSim:
         ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h],  # ylim=[-120, 50],
                                    xlim=[0, self.tstop], ylabel='Transmembrane Current (mV)', xlabel="Time (ms)")
 
-        # [ax_tmc.plot(self.cell.tvec, self.cell.imem[idx, :],
-        #              c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
+        # [ax_tmc.plot(cell.tvec, cell.imem[idx, :],
+        #              c=cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
 
         self.plot_membrane_potential(mem_axes_placement)
 
         # Plotting snapshots at start and stop times of current pulse
         fig_snap1, ax_snap1 = plt.subplots()
         ax_snap1.plot(
-            self.cell.imem[:, self.start_idx + 1], self.cell.zmid, 'o-')
+            cell.imem[:, self.start_idx + 1], cell.zmid, 'o-')
         ax_snap1.axvline(0, ls="--", c='grey')
         ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
         ax_snap1.set_ylabel('Cell Compartments in z direction')
 
         fig_snap2, ax_snap2 = plt.subplots()
         ax_snap2.axvline(0, ls="--", c='grey')
-        ax_snap2.plot(self.cell.imem[:, self.stop_idx], self.cell.zmid, 'o-')
+        ax_snap2.plot(cell.imem[:, self.stop_idx], cell.zmid, 'o-')
         ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
         ax_snap1.set_ylabel('Cell Compartments in z direction')
 
