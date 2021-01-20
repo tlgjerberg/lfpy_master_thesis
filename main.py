@@ -106,6 +106,9 @@ class ExternalPotentialSim:
             # self.cell.set_rotation(x=4.9, y=-3.166, z=-3)
             # Apical dendtrite measurement point at aprrox y=0
             # self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
+            """
+            Adjust positions as needed
+            """
             cell.set_pos(z=-self.cell_dist_to_top)
             cell.set_rotation(x=4.729, y=-3.05, z=-3)
             return cell
@@ -125,6 +128,14 @@ class ExternalPotentialSim:
         self.measure_pnts = np.array(measure_pnts)
 
     def set_electrode_pos(self, cell, elec_positions=[]):
+        """
+        Parameters:
+        cell: LFPy Cell object
+        elec_positions: Electrode positions as a numpy array
+
+        Returns:
+
+        """
 
         # Automatically setting electrode at a given distance from the measurement points
         if not elec_positions:
@@ -206,13 +217,12 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
-    def run_ext_sim(self, cell_models_folder, elec_params, current_amps, positions, coords, stop_time, passive=False):
+    def run_ext_sim(self, cell_models_folder, elec_params, current_amps, elec_positions, com_coords, stop_time, passive=False):
         cell_names = []  # List of strings containing cell names
-        elec_positions = []
         cell = self.return_cell(cell_models_folder, passive)
-        self.create_measure_points(cell, coords)
+        self.create_measure_points(cell, com_coords)
         self.set_electrode_pos(cell)
-        elec_dists = np.zeros((len(elec_positions), coords.shape[0]))
+        elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
         ss_pot = np.zeros(len(elec_positions))
         dV = np.zeros(len(elec_positions))
         # Neuron activation after cell object has been created
@@ -244,8 +254,8 @@ class ExternalPotentialSim:
         self.return_cell(cell_models_folder)
 
         # Neuron activation after cell object has been created
-        if not passive:
-            neuron.h('forall insert hh')
+        # if not passive:
+        #     neuron.h('forall insert hh')
 
         elec_params['positions'] = positions
         elec_params['pulse_amp'] = current_amps
