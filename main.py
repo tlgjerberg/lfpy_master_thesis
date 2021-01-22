@@ -218,13 +218,15 @@ class ExternalPotentialSim:
         pass
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps,  com_coords, stop_time, elec_positions=np.empty(3), passive=False):
-        cell_names = []  # List of strings containing cell names
-        cell = self.return_cell(cell_models_folder, passive)
-        self.create_measure_points(cell, com_coords)
-        elec_positions = self.set_electrode_pos(cell)
-        elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
-        ss_pot = np.zeros(len(elec_positions))
-        dV = np.zeros(len(elec_positions))
+
+        for cell_idx in cells:
+
+            cell = self.return_cell(cell_models_folder, passive)
+            self.create_measure_points(cell, com_coords)
+            elec_positions = self.set_electrode_pos(cell)
+            elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
+            ss_pot = np.zeros(len(elec_positions))
+            dV = np.zeros(len(elec_positions))
         # Neuron activation after cell object has been created
 
         for I in current_amps:
