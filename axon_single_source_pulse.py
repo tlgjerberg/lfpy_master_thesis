@@ -18,8 +18,6 @@ RANK = COMM.Get_rank()
 """
 Improve plotting
 
-Add method for running over a set of electrode positions and current amplitudes
-
 Create plot of Hallermann pyrmidal cell (4 figs?) showing electrode near soma,
 dendrite and axon to demonstrate if activation is possible and at what current
 amplitude.

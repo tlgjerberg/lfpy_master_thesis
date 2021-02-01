@@ -38,7 +38,7 @@ class ExternalPotentialSim:
         self.x_shift = cell_params['x_shift']
         self.z_rot = cell_params['z_rot']
 
-    def return_cell(self, cell_models_folder, passive=True):
+    def return_cell(self, cell_models_folder, z=-3, passive=True):
 
         if self.cell_name == 'axon':
             model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
@@ -92,7 +92,9 @@ class ExternalPotentialSim:
                 'custom_code': [join(model_path, 'Cell parameters.hoc'),
                                 join(model_path, 'charge.hoc')]
             }
+            print('checkpoint 1')
             cell = LFPy.Cell(**cell_parameters)
+            print('checkpoint 2')
             # self.cell = cell
             self.v_init = cell_parameters['v_init']
 
@@ -110,7 +112,7 @@ class ExternalPotentialSim:
             Adjust positions as needed
             """
             cell.set_pos(z=-self.cell_dist_to_top)
-            cell.set_rotation(x=4.729, y=-3.05, z=-3)
+            cell.set_rotation(x=4.729, y=-3.05, z=z)
             return cell
 
     def create_measure_points(self, cell, com_coords):
@@ -138,14 +140,15 @@ class ExternalPotentialSim:
         """
 
         # Automatically setting electrode at a given distance from the measurement points
-        if not elec_positions:
+        if elec_positions.size == 0:
 
             for mp in self.measure_pnts:
 
                 elec_positions.append(
-                    np.array([int(cell.xmid[mp]) - 50, int(cell.ymid[mp]),
-                              int(cell.zmid[mp])], dtype=float))
-
+                    np.array([int(cell.x[mp]) - 50, int(cell.y[mp]),
+                              int(cell.z[mp])], dtype=float))
+            print(int(cell.x[mp]) - 50, int(cell.y[mp]),
+                  int(cell.z[mp]))
         return elec_positions
 
     def _calc_point_sources_field(self, elec_params):
@@ -160,7 +163,6 @@ class ExternalPotentialSim:
         self.elec_params = elec_params
         self.amp = elec_params['pulse_amp']  # External current amplitide
         # Electrode position
-        print('ex_stim', elec_params['positions'])
         self.x0, self.y0, self.z0 = elec_params['positions']
         sigma = elec_params['sigma']
         self.start_time = elec_params['start_time']
@@ -184,7 +186,7 @@ class ExternalPotentialSim:
 
         # Applying the external field function to the cell simulation
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-        v_cell_ext[:, :] = self.ext_field(cell.xmid, cell.ymid, cell.zmid).reshape(
+        v_cell_ext[:, :] = self.ext_field(cell.x.mean(axis=1), cell.y.mean(axis=1), cell.z.mean(axis=1)).reshape(
             cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
 
         cell.insert_v_ext(v_cell_ext, t)
@@ -218,35 +220,42 @@ class ExternalPotentialSim:
         pass
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps,  com_coords, stop_time, elec_positions=np.empty(3), passive=False):
+        cell_rot = [-3, 6]
+        cells = []
+        for z in cell_rot:
 
-        for cell_idx in cells:
-
-            cell = self.return_cell(cell_models_folder, passive)
+            print('cell rotation: ', z)
+            cell = self.return_cell(cell_models_folder, z, passive)
+            print('checkpoint 3')
             self.create_measure_points(cell, com_coords)
-            elec_positions = self.set_electrode_pos(cell)
+            elec_positions = self.set_electrode_pos(cell, elec_positions)
+            print(elec_positions)
             elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
             ss_pot = np.zeros(len(elec_positions))
             dV = np.zeros(len(elec_positions))
-        # Neuron activation after cell object has been created
 
-        for I in current_amps:
+            for I in current_amps:
 
-            elec_params['pulse_amp'] = I
+                elec_params['pulse_amp'] = I
 
-            for idx, pos in enumerate(elec_positions):
-                elec_params['positions'] = pos
-                self.extracellular_stimuli(cell, elec_params)
-                self.run_cell_simulation(cell)
-                self.plot_cellsim(cell)
-                self._find_steady_state(cell)
-                ss_pot[idx] = self.v_ss
-                self._dV(cell)
-                dV[idx] = self.dV
-                elec_dists[idx] = self._record_dist_to_electrode(com_coords)
+                for idx, pos in enumerate(elec_positions):
+                    elec_params['positions'] = pos
+                    self.extracellular_stimuli(cell, elec_params)
+                    self.run_cell_simulation(cell)
+                    self.plot_cellsim(cell)
+                    self._find_steady_state(cell)
+                    ss_pot[idx] = self.v_ss
+                    self._dV(cell)
+                    dV[idx] = self.dV
+                    elec_dists[idx] = self._record_dist_to_electrode(
+                        com_coords)
 
-        self.plot_steady_state(elec_dists[:, 0], ss_pot)
-        self.plot_dV(elec_dists[:, 0], dV)
-        self.create_measure_points(cell, com_coords)
+            self.plot_steady_state(elec_dists[:, 0], ss_pot)
+            self.plot_dV(elec_dists[:, 0], dV)
+            self.create_measure_points(cell, com_coords)
+            cells.append(cell)
+            # cell.strip_hoc_objects()
+            # cell.__del__()
 
         # Freeing up some variables
         I = None
@@ -303,10 +312,10 @@ class ExternalPotentialSim:
                     if not ax_name in used_clrs:
                         used_clrs.append(ax_name)
 
-            self.ax_m.plot([cell.xstart[idx], cell.xend[idx]],
-                           [cell.zstart[idx], cell.zend[idx]], '-',
-                           c=c, clip_on=True, lw=np.sqrt(cell.diam[idx]) * 1)
-
+            self.ax_m.plot([cell.x[idx][0], cell.x[idx][1]],
+                           [cell.z[idx][0], cell.z[idx][1]], '-',
+                           c=c, clip_on=True, lw=0.5)
+            #np.sqrt(cell.diam[idx]) * 1
         lines = []
         for name in used_clrs:
             l, = self.ax_m.plot([0], [0], lw=2, c=sec_clrs[name])
@@ -315,7 +324,7 @@ class ExternalPotentialSim:
                          fontsize=8, loc=(0.05, 0.0), ncol=2)
 
         # Plotting dots at the middle of a given section in its given color
-        [self.ax_m.plot(cell.xmid[idx], cell.zmid[idx], 'o',
+        [self.ax_m.plot(cell.x[idx], cell.z[idx], 'o',
                         c=self.cell_plot_colors[idx], ms=13) for idx in self.cell_plot_idxs]
 
         self.ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
@@ -382,11 +391,18 @@ class ExternalPotentialSim:
         ax_stim.plot(cell.tvec, self.pulse / 1000, lw=0.5)
 
     def plot_cellsim(self, cell):
+        """
+        To add:
+        if placement:
+            plot in one figure
+        else:
+            separate figures
+        """
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[10, 8])
 
         # for m in self.measure_pnts:
-        #     print((cell.xmid[m], cell.ymid[m], cell.zmid[m]))
+        #     print((cell.x[m], cell.y[m], cell.z[m]))
 
         self.cell_plot_idxs = self.measure_pnts.astype(
             dtype='int')  # List of measurement points
