@@ -40,6 +40,6 @@ measure_coordinates = np.array(
 start = time.time()
 # monophasic_pulse_params['stop_time'] = 20
 extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params,
-                      current_amps, measure_coordinates, 20, elec_positions)
+                      current_amps, measure_coordinates, 20)
 end = time.time()
 print(f'Time to execute {end - start} seconds')

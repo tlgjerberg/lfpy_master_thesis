@@ -92,9 +92,8 @@ class ExternalPotentialSim:
                 'custom_code': [join(model_path, 'Cell parameters.hoc'),
                                 join(model_path, 'charge.hoc')]
             }
-            print('checkpoint 1')
+
             cell = LFPy.Cell(**cell_parameters)
-            print('checkpoint 2')
             # self.cell = cell
             self.v_init = cell_parameters['v_init']
 
@@ -129,7 +128,7 @@ class ExternalPotentialSim:
 
         self.measure_pnts = np.array(measure_pnts)
 
-    def set_electrode_pos(self, cell, elec_positions=[]):
+    def set_electrode_pos(self, cell, elec_positions=np.array([])):
         """
         Parameters:
         cell: LFPy Cell object
@@ -140,15 +139,19 @@ class ExternalPotentialSim:
         """
 
         # Automatically setting electrode at a given distance from the measurement points
-        if elec_positions.size == 0:
+        if not elec_positions:
 
-            for mp in self.measure_pnts:
+            mp = self.measure_pnts[0]
+            elec_positions = np.array([int(cell.x[mp].mean()) - 50, int(cell.y[mp].mean()),
+                                       int(cell.z[mp].mean())], dtype=float)
 
-                elec_positions.append(
-                    np.array([int(cell.x[mp]) - 50, int(cell.y[mp]),
-                              int(cell.z[mp])], dtype=float))
-            print(int(cell.x[mp]) - 50, int(cell.y[mp]),
-                  int(cell.z[mp]))
+            for mp in self.measure_pnts[1:]:
+
+                ep = np.array([int(cell.x[mp].mean()) - 50, int(cell.y[mp].mean()),
+                               int(cell.z[mp].mean())], dtype=float)
+
+                elec_positions = np.vstack((elec_positions, ep))
+
         return elec_positions
 
     def _calc_point_sources_field(self, elec_params):
@@ -219,17 +222,15 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
-    def run_ext_sim(self, cell_models_folder, elec_params, current_amps,  com_coords, stop_time, elec_positions=np.empty(3), passive=False):
+    def run_ext_sim(self, cell_models_folder, elec_params, current_amps,  com_coords, stop_time, elec_positions=np.array([]), passive=False):
         cell_rot = [-3, 6]
-        cells = []
+        self.cells = []
         for z in cell_rot:
 
-            print('cell rotation: ', z)
             cell = self.return_cell(cell_models_folder, z, passive)
-            print('checkpoint 3')
             self.create_measure_points(cell, com_coords)
             elec_positions = self.set_electrode_pos(cell, elec_positions)
-            print(elec_positions)
+            print('elec_positions', elec_positions)
             elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
             ss_pot = np.zeros(len(elec_positions))
             dV = np.zeros(len(elec_positions))
@@ -253,13 +254,13 @@ class ExternalPotentialSim:
             self.plot_steady_state(elec_dists[:, 0], ss_pot)
             self.plot_dV(elec_dists[:, 0], dV)
             self.create_measure_points(cell, com_coords)
-            cells.append(cell)
-            # cell.strip_hoc_objects()
-            # cell.__del__()
+            self.cells.append(cell)
+            cell.strip_hoc_objects()
+            cell.__del__()
 
         # Freeing up some variables
-        I = None
-        pos = None
+        # I = None
+        # pos = None
 
     def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, stop_time, passive=False):
         self.return_cell(cell_models_folder)
