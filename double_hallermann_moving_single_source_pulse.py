@@ -23,12 +23,6 @@ elec_positions = np.array([np.array([50, 0, -200], dtype=float),
                            np.array([-200, 0, 0], dtype=float)])
 
 
-# elec_positions = [np.array([[50, 0, -200], ], dtype=float),
-#                   np.array([[111, 131, 652], ], dtype=float),
-#                   np.array([[-242, 7, 929], ], dtype=float),
-#                   np.array([[-200, 0, 0], ], dtype=float),
-#                   np.array([[50, 40, 120], ], dtype=float)]
-
 current_amps = [1e4, -1e4]
 # elec_positions = [np.array([[-242, 7, 929], ], dtype=float)]
 

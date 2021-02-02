@@ -139,7 +139,7 @@ class ExternalPotentialSim:
         """
 
         # Automatically setting electrode at a given distance from the measurement points
-        if not elec_positions:
+        if elec_positions.size == 0:
 
             mp = self.measure_pnts[0]
             elec_positions = np.array([int(cell.x[mp].mean()) - 50, int(cell.y[mp].mean()),
@@ -223,6 +223,10 @@ class ExternalPotentialSim:
         pass
 
     def run_ext_sim(self, cell_models_folder, elec_params, current_amps,  com_coords, stop_time, elec_positions=np.array([]), passive=False):
+        """
+        Move cell inside loops of amplitude and postion
+        """
+
         cell_rot = [-3, 6]
         self.cells = []
         for z in cell_rot:
@@ -230,7 +234,6 @@ class ExternalPotentialSim:
             cell = self.return_cell(cell_models_folder, z, passive)
             self.create_measure_points(cell, com_coords)
             elec_positions = self.set_electrode_pos(cell, elec_positions)
-            print('elec_positions', elec_positions)
             elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
             ss_pot = np.zeros(len(elec_positions))
             dV = np.zeros(len(elec_positions))
@@ -254,13 +257,9 @@ class ExternalPotentialSim:
             self.plot_steady_state(elec_dists[:, 0], ss_pot)
             self.plot_dV(elec_dists[:, 0], dV)
             self.create_measure_points(cell, com_coords)
-            self.cells.append(cell)
+            # self.cells.append(cell)
             cell.strip_hoc_objects()
             cell.__del__()
-
-        # Freeing up some variables
-        # I = None
-        # pos = None
 
     def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, stop_time, passive=False):
         self.return_cell(cell_models_folder)
@@ -275,6 +274,14 @@ class ExternalPotentialSim:
         self.extracellular_stimuli(elec_params)
         self.run_cell_simulation()
         self.plot_currents()
+
+    def export_data(self):
+        """
+        Export data to text file:
+        - compartments measured and their coordinates
+        - array of current and membrane potential
+        """
+        pass
 
     def plot_morphology(self, cell):
 
