@@ -36,7 +36,7 @@ class ExternalPotentialSim:
         self.z_rot = cell_params['z_rot']
 
     def return_sim_name(self):
-        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_rot={self.z_rot}_{self.amp}mA_elec_pos={elec_pos}'
+        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_rot={self.z_rot}_{self.amp}mA_elec_pos={self.elec_pos}'
 
         return sim_name
 
@@ -113,7 +113,7 @@ class ExternalPotentialSim:
             Adjust positions as needed
             """
             cell.set_pos(z=-self.cell_dist_to_top)
-            cell.set_rotation(x=4.729, y=-3.05, z=z)
+            cell.set_rotation(x=4.729, y=-3.05, z=-3)
             return cell
 
     def create_measure_points(self, cell, com_coords):
@@ -137,6 +137,8 @@ class ExternalPotentialSim:
         Parameters: LFPy Cell object, dict of electrode parameters
 
         Returns:
+
+        Seperate parameter definitions from function?
         """
         self.elec_params = elec_params
         self.elec_pos = elec_params['positions']
@@ -216,6 +218,7 @@ class ExternalPotentialSim:
 
         self.extracellular_stimuli(cell, elec_params)
         self.run_cell_simulation(cell)
+        self.export_data(cell)
         self.plot_cellsim(cell)
         self._find_steady_state(cell)
         ss_pot[idx] = self.v_ss
@@ -243,13 +246,14 @@ class ExternalPotentialSim:
         self.run_cell_simulation()
         self.plot_currents()
 
-    def export_data(self):
+    def export_data(self, cell):
         """
         Export data to text file:
         - compartments measured and their coordinates
         - array of current and membrane potential
         """
-        pass
+        file_name = self.return_sim_name()
+        np.save(join(self.save_folder, f'{file_name}_mem_pot'), cell.vmem)
 
     def plot_morphology(self, cell):
 
@@ -300,7 +304,7 @@ class ExternalPotentialSim:
                          fontsize=8, loc=(0.05, 0.0), ncol=2)
 
         # Plotting dots at the middle of a given section in its given color
-        [self.ax_m.plot(cell.x[idx], cell.z[idx], 'o',
+        [self.ax_m.plot(cell.x.mean(axis=1)[idx], cell.z.mean(axis=1)[idx], 'o',
                         c=self.cell_plot_colors[idx], ms=13) for idx in self.cell_plot_idxs]
 
         self.ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
