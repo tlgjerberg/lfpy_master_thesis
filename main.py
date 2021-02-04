@@ -15,9 +15,6 @@ from mpi4py import MPI
 """
  transmembrane current i soma/utvalgte punkter som func av tid x
 membran pot som func av tid
-
- snapshots ved start og stop
-
 """
 
 
@@ -37,6 +34,11 @@ class ExternalPotentialSim:
         self.cell_dist_to_top = cell_params['cell_dist_to_top']
         self.x_shift = cell_params['x_shift']
         self.z_rot = cell_params['z_rot']
+
+    def return_sim_name(self):
+        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_rot={self.z_rot}_{self.amp}mA_elec_pos={elec_pos}'
+
+        return sim_name
 
     def return_cell(self, cell_models_folder, z=-3, passive=True):
 
@@ -123,36 +125,9 @@ class ExternalPotentialSim:
 
         for i in range(com_coords.shape[0]):
             x, y, z = com_coords[i, :]
-            print(i, cell.get_closest_idx(x, y, z))
             measure_pnts.append(cell.get_closest_idx(x, y, z))
 
         self.measure_pnts = np.array(measure_pnts)
-
-    def set_electrode_pos(self, cell, elec_positions=np.array([])):
-        """
-        Parameters:
-        cell: LFPy Cell object
-        elec_positions: Electrode positions as a numpy array
-
-        Returns:
-
-        """
-
-        # Automatically setting electrode at a given distance from the measurement points
-        if elec_positions.size == 0:
-
-            mp = self.measure_pnts[0]
-            elec_positions = np.array([int(cell.x[mp].mean()) - 50, int(cell.y[mp].mean()),
-                                       int(cell.z[mp].mean())], dtype=float)
-
-            for mp in self.measure_pnts[1:]:
-
-                ep = np.array([int(cell.x[mp].mean()) - 50, int(cell.y[mp].mean()),
-                               int(cell.z[mp].mean())], dtype=float)
-
-                elec_positions = np.vstack((elec_positions, ep))
-
-        return elec_positions
 
     def _calc_point_sources_field(self, elec_params):
         pass
@@ -164,6 +139,7 @@ class ExternalPotentialSim:
         Returns:
         """
         self.elec_params = elec_params
+        self.elec_pos = elec_params['positions']
         self.amp = elec_params['pulse_amp']  # External current amplitide
         # Electrode position
         self.x0, self.y0, self.z0 = elec_params['positions']
@@ -222,44 +198,36 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
-    def run_ext_sim(self, cell_models_folder, elec_params, current_amps,  com_coords, stop_time, elec_positions=np.array([]), passive=False):
+    def run_ext_sim(self, cell_models_folder, elec_params, I,  com_coords, stop_time, elec_pos, idx, passive=False):
         """
         Move cell inside loops of amplitude and postion
         """
 
-        cell_rot = [-3, 6]
-        self.cells = []
-        for z in cell_rot:
+        # cell_rot = [-3, -6]
+        # for z in cell_rot:
+        elec_params['pulse_amp'] = I
+        elec_params['positions'] = elec_pos
+        cell = self.return_cell(cell_models_folder, passive)
+        self.create_measure_points(cell, com_coords)
+        # elec_positions = self.set_electrode_pos(cell, elec_positions)
+        elec_dists = np.zeros((len(elec_pos), com_coords.shape[0]))
+        ss_pot = np.zeros(len(elec_pos))
+        dV = np.zeros(len(elec_pos))
 
-            cell = self.return_cell(cell_models_folder, z, passive)
-            self.create_measure_points(cell, com_coords)
-            elec_positions = self.set_electrode_pos(cell, elec_positions)
-            elec_dists = np.zeros((len(elec_positions), com_coords.shape[0]))
-            ss_pot = np.zeros(len(elec_positions))
-            dV = np.zeros(len(elec_positions))
+        self.extracellular_stimuli(cell, elec_params)
+        self.run_cell_simulation(cell)
+        self.plot_cellsim(cell)
+        self._find_steady_state(cell)
+        ss_pot[idx] = self.v_ss
+        self._dV(cell)
+        dV[idx] = self.dV
+        elec_dists[idx] = self._record_dist_to_electrode(com_coords)
 
-            for I in current_amps:
-
-                elec_params['pulse_amp'] = I
-
-                for idx, pos in enumerate(elec_positions):
-                    elec_params['positions'] = pos
-                    self.extracellular_stimuli(cell, elec_params)
-                    self.run_cell_simulation(cell)
-                    self.plot_cellsim(cell)
-                    self._find_steady_state(cell)
-                    ss_pot[idx] = self.v_ss
-                    self._dV(cell)
-                    dV[idx] = self.dV
-                    elec_dists[idx] = self._record_dist_to_electrode(
-                        com_coords)
-
-            self.plot_steady_state(elec_dists[:, 0], ss_pot)
-            self.plot_dV(elec_dists[:, 0], dV)
-            self.create_measure_points(cell, com_coords)
-            # self.cells.append(cell)
-            cell.strip_hoc_objects()
-            cell.__del__()
+        self.plot_steady_state(elec_dists[:, 0], ss_pot)
+        self.plot_dV(elec_dists[:, 0], dV)
+        self.create_measure_points(cell, com_coords)
+        # cell.strip_hoc_objects()
+        cell.__del__()
 
     def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, stop_time, passive=False):
         self.return_cell(cell_models_folder)
