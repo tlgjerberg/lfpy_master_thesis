@@ -51,7 +51,8 @@ def set_electrode_pos(measure_coordinates):
 def run_hallermann(cell_models_folder, measure_coordinates, run_sim=False, plot_sim=False):
 
     start = time.time()
-    extPotSim = ExternalPotentialSim(cellsim_Hallermann_params)
+    extPotSim = ExternalPotentialSim(
+        cellsim_Hallermann_params, monophasic_pulse_params)
 
     if run_sim:
         elec_positions = set_electrode_pos(measure_coordinates)
@@ -60,7 +61,7 @@ def run_hallermann(cell_models_folder, measure_coordinates, run_sim=False, plot_
 
             for idx, pos in enumerate(elec_positions):
 
-                extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params,
+                extPotSim.run_ext_sim(cell_models_folder,
                                       I, measure_coordinates, 20, pos, idx)
             # Plot Sim
     if plot_sim:
@@ -69,7 +70,7 @@ def run_hallermann(cell_models_folder, measure_coordinates, run_sim=False, plot_
         cell_tvec = np.load(join(extPotSim.save_folder,
                                  'Hallermann_x_shift=0_z_rot=0_-10000.0mA_elec_pos=[ -50    0 -200]_tvec.npy'))
         plotSim = PlotSimulations(
-            cellsim_Hallermann_params, cell_vmem, cell_tvec)
+            cellsim_Hallermann_params, monophasic_pulse_params, cell_vmem, cell_tvec)
         cell = plotSim.return_cell(cell_models_folder)
         plotSim.plot_cellsim(cell, measure_coordinates)
 

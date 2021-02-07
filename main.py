@@ -19,11 +19,12 @@ membran pot som func av tid
 
 class ExternalPotentialSim:
 
-    def __init__(self, cell_params):
+    def __init__(self, cell_params, elec_params):
 
         self.root_folder = os.path.dirname(__file__)
 
         self.cell_params = cell_params
+        self.elec_params = elec_params
         self.save_folder = join(
             self.root_folder, cell_params['save_folder_name'])
         self.dt = cell_params['dt']
@@ -132,7 +133,7 @@ class ExternalPotentialSim:
     def _calc_point_sources_field(self, elec_params):
         pass
 
-    def extracellular_stimuli(self, cell, elec_params):
+    def extracellular_stimuli(self, cell):
         """
         Parameters: LFPy Cell object, dict of electrode parameters
 
@@ -140,14 +141,13 @@ class ExternalPotentialSim:
 
         Seperate parameter definitions from function?
         """
-        self.elec_params = elec_params
-        self.elec_pos = elec_params['positions']
-        self.amp = elec_params['pulse_amp']  # External current amplitide
+        self.elec_pos = self.elec_params['positions']
+        self.amp = self.elec_params['pulse_amp']  # External current amplitide
         # Electrode position
-        self.x0, self.y0, self.z0 = elec_params['positions']
-        sigma = elec_params['sigma']
-        self.start_time = elec_params['start_time']
-        self.stop_time = elec_params['stop_time']
+        self.x0, self.y0, self.z0 = self.elec_params['positions']
+        sigma = self.elec_params['sigma']
+        self.start_time = self.elec_params['start_time']
+        self.stop_time = self.elec_params['stop_time']
 
         # Calculating external field function
         self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
@@ -163,7 +163,7 @@ class ExternalPotentialSim:
         self.pulse = np.zeros(n_tsteps)
         self.start_idx = np.argmin(np.abs(t - self.start_time))
         self.stop_idx = np.argmin(np.abs(t - self.stop_time))
-        self.pulse[self.start_idx:self.stop_idx] = elec_params['pulse_amp']
+        self.pulse[self.start_idx:self.stop_idx] = self.amp
 
         # Applying the external field function to the cell simulation
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
@@ -200,15 +200,15 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
-    def run_ext_sim(self, cell_models_folder, elec_params, I,  com_coords, stop_time, elec_pos, idx, passive=False):
+    def run_ext_sim(self, cell_models_folder, I,  com_coords, stop_time, elec_pos, idx, passive=False):
         """
         Move cell inside loops of amplitude and postion
         """
 
         # cell_rot = [-3, -6]
         # for z in cell_rot:
-        elec_params['pulse_amp'] = I
-        elec_params['positions'] = elec_pos
+        self.elec_params['pulse_amp'] = I
+        self.elec_params['positions'] = elec_pos
         cell = self.return_cell(cell_models_folder, passive)
         # self.create_measure_points(cell, com_coords)
         # elec_positions = self.set_electrode_pos(cell, elec_positions)
@@ -216,7 +216,7 @@ class ExternalPotentialSim:
         ss_pot = np.zeros(len(elec_pos))
         dV = np.zeros(len(elec_pos))
 
-        self.extracellular_stimuli(cell, elec_params)
+        self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
         self.export_data(cell)
         # self.plot_cellsim(cell)

@@ -1,10 +1,14 @@
 from main import ExternalPotentialSim
 import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.patches import Ellipse
+from matplotlib.cm import ScalarMappable
 
 
 class PlotSimulations(ExternalPotentialSim):
-    def __init__(self, cell_params, cell_vmem, cell_tvec):
-        super().__init__(cell_params)
+    def __init__(self, cell_params, elec_params, cell_vmem, cell_tvec):
+        super().__init__(cell_params, elec_params)
         self.vmem = cell_vmem
         self.tvec = cell_tvec
 
