@@ -1,5 +1,6 @@
 from main import ExternalPotentialSim
 from plotting import PlotSimulations
+from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_Hallermann_params)
 import numpy as np
 import neuron
@@ -29,23 +30,6 @@ current_amps = [1e4, -1e4]
 
 measure_coordinates = np.array(
     [[-0, 0, - 200], [10, 126, 659], [-251, 39, 879]])
-
-
-def set_electrode_pos(measure_coordinates):
-    """
-    Sets electrodes at a given distance from the measurement coordinates
-    Parameters:
-    measure_coordinates
-    Returns:
-    """
-    print(measure_coordinates.shape)
-    elec_positions = np.copy(measure_coordinates)
-    print(elec_positions.shape)
-    for mc in range(elec_positions.shape[0]):
-
-        elec_positions[mc][0] -= 50
-
-    return elec_positions
 
 
 def run_hallermann(cell_models_folder, measure_coordinates, run_sim=False, plot_sim=False):
