@@ -13,3 +13,7 @@ init_params_multi_cells = {
     'measure_coords': measure_coordinates,
     'passive': False
 }
+
+plot_params = {
+
+}

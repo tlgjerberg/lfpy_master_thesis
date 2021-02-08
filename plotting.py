@@ -16,7 +16,10 @@ class PlotSimulations(ExternalPotentialSim):
 
     def plot_morphology(self, cell):
 
-        # Defining figure frame and parameters
+        # Create separate figure for the axon morphology
+        fig_morph, ax_morph = plt.subplots()
+
+        # Defining figure frame and parameters for combined figure
         self.fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
                                  top=0.9, bottom=0.1)
 
@@ -51,16 +54,28 @@ class PlotSimulations(ExternalPotentialSim):
                     if not ax_name in used_clrs:
                         used_clrs.append(ax_name)
 
+            # Plotting the neuron morphology with colored lines matching segments
             self.ax_m.plot([cell.x[idx][0], cell.x[idx][1]],
                            [cell.z[idx][0], cell.z[idx][1]], '-',
-                           c=c, clip_on=True, lw=0.5)
+                           c=c, clip_on=True, lw=2)
+
+            ax_morph.plot([cell.x[idx][0], cell.x[idx][1]],
+                          [cell.z[idx][0], cell.z[idx][1]], '-',
+                          c=c, clip_on=True, lw=2)
             #np.sqrt(cell.diam[idx]) * 1
+
+        ax_morph.set_xlabel(r'x[$\mu m$]')
+        ax_morph.set_ylabel(r'x[$\mu m$]')
+
+        # Adding discriptors below the morphology for each kind of segement
         lines = []
         for name in used_clrs:
             l, = self.ax_m.plot([0], [0], lw=2, c=sec_clrs[name])
             lines.append(l)
         self.ax_m.legend(lines, used_clrs, frameon=False,
                          fontsize=8, loc=(0.05, 0.0), ncol=2)
+        ax_morph.legend(lines, used_clrs, frameon=False,
+                        fontsize=8, loc=(0.05, 0.0), ncol=2)
 
         # Plotting dots at the middle of a given section in its given color
         [self.ax_m.plot(cell.x.mean(axis=1)[idx], cell.z.mean(axis=1)[idx], 'o',
@@ -79,9 +94,10 @@ class PlotSimulations(ExternalPotentialSim):
         self.ax_m.add_artist(Ellipse(ellipse_pos, width=2 * self.elec_params["electrode_radii"],
                                      height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
-    def plot_external_field(self, cell):
+        fig_morph.savefig(
+            join(self.save_folder, f'hallermann_{self.amp}mA_elec_pos={self.elec_pos}.svg'))
 
-        self.extracellular_stimuli(cell)
+    def plot_external_field(self, cell):
 
         # Adding external field visualization to cell morphology figure
         v_field_ext = np.zeros((200, 200))
@@ -143,6 +159,7 @@ class PlotSimulations(ExternalPotentialSim):
         # Recreating the cell object used in simulatios without running simul
         cell = self.return_cell(self.cell_models_folder)
         self.create_measure_points(cell, com_coords)
+        self.extracellular_stimuli(cell)
 
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[10, 8])
