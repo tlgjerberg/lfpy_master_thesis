@@ -4,6 +4,8 @@ import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Ellipse
 from matplotlib.cm import ScalarMappable
+import os
+from os.path import join
 
 
 class PlotSimulations(ExternalPotentialSim):
@@ -78,6 +80,9 @@ class PlotSimulations(ExternalPotentialSim):
                                      height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
     def plot_external_field(self, cell):
+
+        self.extracellular_stimuli(cell)
+
         # Adding external field visualization to cell morphology figure
         v_field_ext = np.zeros((200, 200))
         x = np.linspace(-500, 500, 200)
@@ -117,7 +122,7 @@ class PlotSimulations(ExternalPotentialSim):
         #     ax_vm.axvline(cell.tvec[self.spike_time_idxs], c='r', ls='--')
 
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
-        [ax_vm.plot(cell.tvec, cell.vmem[idx],
+        [ax_vm.plot(self.tvec, self.vmem[idx],
                     c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
 
     def plot_current_pulse(self, cell, placement):
@@ -125,7 +130,7 @@ class PlotSimulations(ExternalPotentialSim):
         ax_stim = self.fig.add_axes(placement, xlim=[0, self.tstop],
                                     ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
         # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
-        ax_stim.plot(cell.tvec, self.pulse / 1000, lw=0.5)
+        ax_stim.plot(self.tvec, self.pulse / 1000, lw=0.5)
 
     def plot_cellsim(self, cell, com_coords):
         """
