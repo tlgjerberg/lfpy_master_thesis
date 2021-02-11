@@ -200,7 +200,7 @@ class ExternalPotentialSim:
     def find_time_constant(self):
         pass
 
-    def run_ext_sim(self, cell_models_folder, I,  com_coords, stop_time, elec_pos, idx, passive=False):
+    def run_ext_sim(self, cell_models_folder, I,  com_coords, stop_time, elec_pos, passive=False):
         """
         Move cell inside loops of amplitude and postion
         """
@@ -221,10 +221,10 @@ class ExternalPotentialSim:
         self.export_data(cell)
         # self.plot_cellsim(cell)
         self._find_steady_state(cell)
-        ss_pot[idx] = self.v_ss
-        self._dV(cell)
-        dV[idx] = self.dV
-        elec_dists[idx] = self._record_dist_to_electrode(com_coords)
+        # ss_pot[idx] = self.v_ss
+        # self._dV(cell)
+        # dV[idx] = self.dV
+        # elec_dists[idx] = self._record_dist_to_electrode(com_coords)
 
         # self.plot_steady_state(elec_dists[:, 0], ss_pot)
         # self.plot_dV(elec_dists[:, 0], dV)
@@ -251,6 +251,9 @@ class ExternalPotentialSim:
         - compartments measured and their coordinates
         - array of current and membrane potential
         """
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
         file_name = self.return_sim_name()
         np.save(join(self.save_folder, f'{file_name}_vmem'), cell.vmem)
         np.save(join(self.save_folder, f'{file_name}_tvec'), cell.tvec)

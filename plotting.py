@@ -9,10 +9,8 @@ from os.path import join
 
 
 class PlotSimulations(ExternalPotentialSim):
-    def __init__(self, cell_params, elec_params, cell_vmem, cell_tvec):
+    def __init__(self, cell_params, elec_params):
         super().__init__(cell_params, elec_params)
-        self.vmem = cell_vmem
-        self.tvec = cell_tvec
 
     def plot_morphology(self, cell):
 
@@ -148,7 +146,7 @@ class PlotSimulations(ExternalPotentialSim):
         # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
         ax_stim.plot(self.tvec, self.pulse / 1000, lw=0.5)
 
-    def plot_cellsim(self, cell, com_coords):
+    def plot_cellsim(self, cell, com_coords, cell_vmem, cell_tvec):
         """
         To add:
         if placement:
@@ -156,6 +154,8 @@ class PlotSimulations(ExternalPotentialSim):
         else:
             separate figures?
         """
+        self.vmem = cell_vmem
+        self.tvec = cell_tvec
         # Recreating the cell object used in simulatios without running simul
         cell = self.return_cell(self.cell_models_folder)
         self.create_measure_points(cell, com_coords)
