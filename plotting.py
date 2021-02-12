@@ -82,10 +82,6 @@ class PlotSimulations(ExternalPotentialSim):
         self.ax_m.text(20, 40, "Cortical electrode\n(R={} $\mu$m)".format(self.elec_params["electrode_radii"]),
                        fontsize=9, ha='center')
 
-        # for e_idx in range(len(self.elec_params["positions"])):
-        #     ellipse_pos = [self.elec_params["positions"][e_idx]
-        #                    [0], self.elec_params["positions"][e_idx][2]]
-        # print(self.elec_params["positions"])
         ellipse_pos = [self.elec_params["positions"]
                        [0], self.elec_params["positions"][2]]
 
@@ -112,10 +108,7 @@ class PlotSimulations(ExternalPotentialSim):
                 v_field_ext[xidx, zidx] = self.ext_field(xi, 0, zi) * self.amp
 
         vmax = np.max(np.abs(v_field_ext)) / 5
-        # ax_cb = plt.gca()
-        # im_p = ax_cb.imshow(v_field_ext.T, extent=[np.min(xf), np.max(xf), np.min(zf), np.max(zf)],
-        #                     origin='lower', interpolation='nearest', cmap='bwr', vmin=-vmax, vmax=vmax)
-        #
+
         divider = make_axes_locatable(self.ax_m)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         # plt.colorbar(im_p, cax=cax, label='mV')
@@ -163,9 +156,6 @@ class PlotSimulations(ExternalPotentialSim):
 
         # Simulating cell after all parameters and field has been added
         self.fig = plt.figure(figsize=[10, 8])
-
-        # for m in self.measure_pnts:
-        #     print((cell.x[m], cell.y[m], cell.z[m]))
 
         self.cell_plot_idxs = self.measure_pnts.astype(
             dtype='int')  # List of measurement points

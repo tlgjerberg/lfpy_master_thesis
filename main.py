@@ -211,7 +211,6 @@ class ExternalPotentialSim:
         self.elec_params['positions'] = elec_pos
         cell = self.return_cell(cell_models_folder, passive)
         # self.create_measure_points(cell, com_coords)
-        # elec_positions = self.set_electrode_pos(cell, elec_positions)
         elec_dists = np.zeros((len(elec_pos), com_coords.shape[0]))
         ss_pot = np.zeros(len(elec_pos))
         dV = np.zeros(len(elec_pos))

@@ -20,18 +20,10 @@ RANK = COMM.Get_rank()
 """
 Improve plotting
 
-Create plot of Hallermann pyrmidal cell (4 figs?) showing electrode near soma,
-dendrite and axon to demonstrate if activation is possible and at what current
-amplitude.
-
 Stimulate using current of 10 muA and go lower after (Histed et Al)
-
-Create figure of axial current over distance along axon. Use simple stick model.
 
 Improve plot_cellsim_alt for easy reading and page formatting.
 
-Fix issue with splitting the workload properly between processes. Currently loop
-divides work in a way that causes crashing
 
 """
 
@@ -41,8 +33,6 @@ def run_axon(cell_models_folder, measure_coordinates, I, pos, run_sim=False, plo
     start = time.time()
     extPotSim = ExternalPotentialSim(
         cellsim_bisc_stick_params, monophasic_pulse_params)
-
-    # cell_name = extPotSim.return_sim_name()
 
     if run_sim:
         elec_positions = set_electrode_pos(measure_coordinates)
@@ -103,25 +93,3 @@ for I in current_amps:
             os._exit(0)
         else:
             os.waitpid(pid, 0)
-
-
-# # Test parameters
-
-# cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-# current_amps = [-1e4]  # uA
-# positions = np.array([np.array([0, 0, -50], dtype=float),
-#                       np.array([0, 0, -100], dtype=float),
-#                       np.array([0, 0, -200], dtype=float),
-#                       np.array([0, 0, -400], dtype=float),
-#                       np.array([0, 0, -500], dtype=float)])
-
-# cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
-# axon_measure_idxs = np.array(
-#     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
-# monophasic_pulse_params['stop_time'] = 200
-
-# extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
-#
-# extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
-#                       positions, axon_measure_idxs, 200, passive=True)
-# assert np.allclose(recvbuf, RANK)
