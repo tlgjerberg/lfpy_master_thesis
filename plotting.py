@@ -93,7 +93,7 @@ class PlotSimulations(ExternalPotentialSim):
                                      height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
 
         fig_morph.savefig(
-            join(self.save_folder, f'hallermann_{self.amp}mA_elec_pos={self.elec_pos}.svg'))
+            join(self.save_folder, f'{self.cell_name}_{self.amp}mA_elec_pos={self.elec_pos}.svg'))
 
     def plot_external_field(self, cell):
 

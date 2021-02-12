@@ -45,14 +45,15 @@ def run_axon(cell_models_folder, measure_coordinates, I, pos, run_sim=False, plo
     # cell_name = extPotSim.return_sim_name()
 
     if run_sim:
-        print('sim')
         elec_positions = set_electrode_pos(measure_coordinates)
 
         extPotSim.run_ext_sim(cell_models_folder,
                               I, measure_coordinates, 20, pos)
+
+    else:
+        print('No simulation run!')
         # Plot Sim
     if plot_sim:
-        print('plot')
 
         #         cell_vmem = np.load(
         #             join(extPotSim.save_folder, cell_name + '.npy'))
@@ -60,7 +61,7 @@ def run_axon(cell_models_folder, measure_coordinates, I, pos, run_sim=False, plo
         #             join(extPotSim.save_folder, cell_name + '.npy'))
 
         cell_tvec = np.load(
-            join(extPotSim.save_folder, f'axon_x_shift=0_z_rot=0_{I}.0mA_elec_pos={pos}_tvec' + '.npy'))
+            join(extPotSim.save_folder, f'axon_x_shift=0_z_rot=0_{I}mA_elec_pos={pos}_tvec' + '.npy'))
         cell_vmem = np.load(
             join(extPotSim.save_folder, f'axon_x_shift=0_z_rot=0_{I}mA_elec_pos={pos}_vmem' + '.npy'))
         plotSim = PlotSimulations(
@@ -68,6 +69,8 @@ def run_axon(cell_models_folder, measure_coordinates, I, pos, run_sim=False, plo
         cell = plotSim.return_cell(cell_models_folder)
         plotSim.plot_cellsim(
             cell, measure_coordinates, cell_vmem, cell_tvec)
+    else:
+        print('No plots generated!')
 
     end = time.time()
     print(f'Time to execute {end - start} seconds')
@@ -85,16 +88,17 @@ axon_measure_idxs = np.array(
 monophasic_pulse_params['stop_time'] = 200
 
 task_idx = -1
-for pos in elec_positions:
-    for I in current_amps:
+for I in current_amps:
+    for pos in elec_positions:
         task_idx += 1
         if not divmod(task_idx, SIZE)[1] == RANK:
-            print(I, pos)
-            run_axon(cell_models_folder, axon_measure_idxs, I, pos, True, True)
+            # print('RANK: ', RANK, I, pos)
+            continue
             # Lines below are only needed if NEURON needs to be reset every time
         pid = os.fork()
         if pid == 0:
             # Do work here!
+            run_axon(cell_models_folder, axon_measure_idxs, I, pos, True, True)
             print("RANK %d doing task %d" % (RANK, task_idx))
             os._exit(0)
         else:
