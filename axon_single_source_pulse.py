@@ -1,4 +1,6 @@
 from main import ExternalPotentialSim
+from plotting import PlotSimulations
+from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_bisc_stick_params)
 import numpy as np
 import neuron
@@ -9,7 +11,7 @@ import os
 from os.path import join
 import sys
 from mpi4py import MPI
-
+import time
 COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
@@ -18,68 +20,70 @@ RANK = COMM.Get_rank()
 """
 Improve plotting
 
-Create plot of Hallermann pyrmidal cell (4 figs?) showing electrode near soma,
-dendrite and axon to demonstrate if activation is possible and at what current
-amplitude.
-
 Stimulate using current of 10 muA and go lower after (Histed et Al)
-
-Create figure of axial current over distance along axon. Use simple stick model.
 
 Improve plot_cellsim_alt for easy reading and page formatting.
 
+
 """
+
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+cellsim_bisc_stick_params['save_folder_name'] = 'data/axon_bisc_dist_stim'
 current_amps = [-1e4]  # uA
-positions = np.array([[0, 0, -50],
-                      [0, 0, -100],
-                      [0, 0, -200],
-                      [0, 0, -400]], dtype=float)
-# ,
-#[0, 0, -500]
-print(positions.shape)
-cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
-axon_measure_idxs = np.array(
+elec_positions = np.array([[0, 0, -50],
+                           [0, 0, -100],
+                           [0, 0, -200],
+                           [0, 0, -400]], dtype=float)
+
+measure_coordinates = np.array(
     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
-monophasic_pulse_params['stop_time'] = 200
-
-if RANK == 0:
-    sendbuf = positions
 
 
-else:
-    cell_models_folder = None
-    current_amps = None  # uA
-    positions = None
-    axon_measure_idxs = None
+def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_sim=False):
+
+    monophasic_pulse_params['pulse_amp'] = I
+    monophasic_pulse_params['positions'] = pos
+    cellsim_bisc_stick_params['z_rot'] = z
+
+    extPotSim = ExternalPotentialSim(
+        cellsim_bisc_stick_params, monophasic_pulse_params)
+
+    if run_sim:
+        elec_positions = set_electrode_pos(measure_coordinates)
+
+        extPotSim.run_ext_sim(cell_models_folder, measure_coordinates, 20, z)
+
+    else:
+        print('No simulation run!')
+
+    if plot_sim:
+
+        cell_tvec = np.load(
+            join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_tvec' + '.npy'))
+        cell_vmem = np.load(
+            join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_vmem' + '.npy'))
+        plotSim = PlotSimulations(
+            cellsim_bisc_stick_params, monophasic_pulse_params, cell_vmem, cell_tvec)
+        cell = plotSim.return_cell(cell_models_folder)
+        plotSim.plot_cellsim(cell, measure_coords,
+                             cell_vmem, cell_tvec, z, [0.05, 0.05, 0.3, 0.90])
+    else:
+        print('No plots generated!')
 
 
-COMM.bcast(cell_models_folder, root=0)
-COMM.bcast(current_amps, root=0)
-COMM.bcast(monophasic_pulse_params, root=0)
-COMM.bcast(cellsim_bisc_stick_params, root=0)
+start = time.time()
+z = np.pi
+task_idx = -1
+for I in current_amps:
+    for pos in elec_positions:
+        task_idx += 1
+        if not divmod(task_idx, SIZE)[1] == RANK:
+            continue
 
-recvbuf = np.empty(3, dtype='float')
-COMM.Scatter(positions, recvbuf, root=0)
+        run_axon(cell_models_folder,
+                 measure_coordinates, I, pos, z, True, True)
+        print("RANK %d doing task %d" % (RANK, task_idx))
 
-positions = recvbuf
-# # Test parameters
 
-# cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-# current_amps = [-1e4]  # uA
-# positions = np.array([np.array([0, 0, -50], dtype=float),
-#                       np.array([0, 0, -100], dtype=float),
-#                       np.array([0, 0, -200], dtype=float),
-#                       np.array([0, 0, -400], dtype=float),
-#                       np.array([0, 0, -500], dtype=float)])
-
-# cellsim_bisc_stick_params['save_folder_name'] = 'mpi_axon_test'
-# axon_measure_idxs = np.array(
-#     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
-# monophasic_pulse_params['stop_time'] = 200
-print('Rank', RANK)
-extPotSim = ExternalPotentialSim(cellsim_bisc_stick_params)
-
-extPotSim.run_ext_sim(cell_models_folder, monophasic_pulse_params, current_amps,
-                      positions, axon_measure_idxs, 200, passive=True)
-# assert np.allclose(recvbuf, RANK)
+end = time.time()
+print(f'Time to execute {end - start} seconds')
