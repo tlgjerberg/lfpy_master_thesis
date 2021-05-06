@@ -170,17 +170,23 @@ class ExternalPotentialSim:
     def run_cell_simulation(self, cell):
         cell.simulate(rec_vmem=True, rec_imem=True)
 
-    def _find_steady_state(self, cell):
+    def find_steady_state_pot(self, cell_vmem):
         """
         Detect steady state potential
         """
-        self.v_ss = np.max(cell.vmem)
-        self.v_ss_idx = np.argmax(cell.vmem)
+        v_ss = np.max(cell_vmem)
+        v_ss_idx = np.argmax(cell_vmem)
         # find_diff = np.diff(cell.vmem)
+        return v_ss
 
-    def _dV(self, cell):
-        self._find_steady_state(cell)
-        self.dV = self.v_ss - self.v_init
+    def dV(self, v_ss):
+        v_ss = [i for i in v_ss if i]
+
+        dV = np.zeros(len(v_ss))
+
+        for v in range(len(v_ss)):
+            dV[v] = v_ss[v] - self.v_init
+        return dV
 
     def return_dist_to_electrode(self, com_coords):
 
