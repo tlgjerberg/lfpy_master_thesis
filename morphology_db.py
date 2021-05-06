@@ -78,8 +78,7 @@ neuron_chunks = COMM.scatter(neuron_chunks, root=0)
 
 
 cell_depths = -np.linspace(0, 165, 5)  # Equally spaced cell depths
-# print(cell_depths)
-# cell_depths = [-160]
+
 terminal_depths = []  # List of axon terminal depths corresonding to indices
 
 neuron_variants_counter = 0
@@ -108,8 +107,7 @@ for nrn in neuron_chunks:
                 # if h.SectionRef(sec=section).nchild() == 0:
                 extreme_idx = cell.get_idx(section=secname)[-1]
                 # Change to get only extremeties
-                # print('extreme_idx', extreme_idx)
-                # print('cellz', cell.z[extreme_idx])
+
                 if cell.z[extreme_idx][-1] < 0:
                     continue
 
