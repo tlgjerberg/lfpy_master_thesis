@@ -254,11 +254,11 @@ class PlotSimulations(ExternalPotentialSim):
             join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
         # plt.show()
 
-    def plot_dV(self, elec_dists, dV):
+    def plot_dV(self, elec_positions, dV):
 
-        # elec_dists = np.log(elec_dists)
-        # dV = np.log(dV)
-
+        elec_positions = elec_positions[elec_positions != 0]
+        elec_dists = elec_positions.ravel()
+        elec_dists *= -1
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
         ax.set_ylabel('dV (mV)')
@@ -295,7 +295,6 @@ class PlotSimulations(ExternalPotentialSim):
         self.cell_plot_colors = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
-        # [0.05, 0.05, 0.2, 0.90]
         self.morph_ax_params = [0.6, 0.05, 0.2, 0.90]
 
         self.plot_morphology()
@@ -353,8 +352,10 @@ class PlotSimulations(ExternalPotentialSim):
 
         plt.close(fig=self.fig)
 
-    def plot_double_morphology(self, cell_models_folder, z_rot, msre_coords):
+    def plot_double_morphology(self, cell_models_folder, z_rot, msre_coords, xlim=[-500, 500], ylim=[-300, 1200]):
 
+        self.xlim = xlim
+        self.ylim = ylim
         morph_ax_params1 = [0.05, 0.1, 0.5, 0.9]
         morph_ax_params2 = [0.48, 0.1, 0.5, 0.9]
 
