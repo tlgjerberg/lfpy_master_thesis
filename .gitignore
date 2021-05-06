@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#cell models
+cell_models/
+x86_64/
+
+#Blue Brain model
+hoc_combos_syn.1_0_10.allzips/
+hoc_combos_syn.1_0_10.unzipped/
