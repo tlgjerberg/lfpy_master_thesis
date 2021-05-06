@@ -18,7 +18,7 @@ SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-cellsim_Hallermann_params['save_folder_name'] = 'Hallermann_double_test'
+cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_double_morph'
 
 """
 Placeholder variables
@@ -32,16 +32,12 @@ current_amps = [-1e4]
 
 measure_coordinates = np.array([[680, 0, -548]])
 
-# cell_rot = [np.pi, 0, np.pi / 2, np.pi / 3, np.pi / 4, 1.4]
-# cell_rot = [np.pi / 2, (3. / 2) * np.pi]
+
 cell_rot = [np.pi, 0]
 
 
 def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_sim=False):
-    print('RANK', RANK)
-    print('z', z)
-    test_pos = set_electrode_pos(measure_coords, 50)
-    print(test_pos)
+
     monophasic_pulse_params['pulse_amp'] = I
     monophasic_pulse_params['positions'] = pos
     cellsim_Hallermann_params['z_rot'] = z
@@ -53,6 +49,8 @@ def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim
     if run_sim:
 
         extPotSim.run_ext_sim(cell_models_folder, measure_coords, 20)
+    else:
+        print("No simulation run")
 
     if plot_sim:
         cell_vmem = np.load(
@@ -66,13 +64,15 @@ def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim
 
         plotSim.plot_double_morphology(
             cell_models_folder, z_rot, measure_coords)
+    else:
+        print("No plot generated")
 
     if z == 0 and plot_sim:
         z_rot_len = len(extPotSim.cell_name) + len(f'{extPotSim.x_shift}') + 16
         cell_vmem_rot = np.load(join(extPotSim.save_folder, sim_name[0:z_rot_len] +
-                                     f'{np.pi}' + sim_name[z_rot_len + 1:] + '_vmem.npy'))
+                                     f'{np.pi:.2f}' + sim_name[z_rot_len + 4:] + '_vmem.npy'))
         cell_tvec_rot = np.load(join(extPotSim.save_folder, sim_name[0:z_rot_len] +
-                                     f'{np.pi}' + sim_name[z_rot_len + 1:] + '_tvec.npy'))
+                                     f'{np.pi:.2f}' + sim_name[z_rot_len + 4:] + '_tvec.npy'))
         plotSim.plot_double_mem_pot(cell_vmem_rot, cell_tvec_rot)
 
 
