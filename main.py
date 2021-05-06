@@ -34,7 +34,7 @@ class ExternalPotentialSim:
         self.z_rot = cell_params['z_rot']
 
     def return_sim_name(self):
-        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_rot={self.z_rot}_{self.amp}mA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}'
+        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_rot={self.z_rot:.2f}_{self.amp}mA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}'
 
         return sim_name
 
@@ -57,11 +57,7 @@ class ExternalPotentialSim:
                 "extracellular": True,
             }
             cell = LFPy.Cell(**cell_parameters)
-            # self.cell = cell
             self.v_init = cell_parameters['v_init']
-            # print(self.cell.zmid[1] - self.cell.zmid[0])
-            # if not passive:
-            #     neuron.h('forall insert hh')
 
             return cell
 
@@ -131,9 +127,6 @@ class ExternalPotentialSim:
         # print('measure_coord', cell.x[self.measure_pnts[0]].mean(
         # ), cell.y[self.measure_pnts[0]].mean(), cell.z[self.measure_pnts[0]].mean())
 
-    def _calc_point_sources_field(self, elec_params):
-        pass
-
     def extracellular_stimuli(self, cell):
         """
         Parameters: LFPy Cell object, dict of electrode parameters
@@ -183,7 +176,7 @@ class ExternalPotentialSim:
         """
         self.v_ss = np.max(cell.vmem)
         self.v_ss_idx = np.argmax(cell.vmem)
-        find_diff = np.diff(cell.vmem)
+        # find_diff = np.diff(cell.vmem)
 
     def _dV(self, cell):
         self._find_steady_state(cell)
@@ -204,27 +197,17 @@ class ExternalPotentialSim:
         for idx in self.measure_pnts:
             coords = [cell.x[idx].mean(axis=0), cell.y[idx].mean(
                 axis=0), cell.z[idx].mean(axis=0)]
-            print('segement_coords', coords)
 
     def run_ext_sim(self, cell_models_folder, com_coords, stop_time, passive=False):
 
         cell = self.return_cell(cell_models_folder)
         self.create_measure_points(cell, com_coords)
         self.return_segment_coords(cell)
-        elec_dists = np.zeros((len(self.elec_pos), com_coords.shape[0]))
-        ss_pot = np.zeros(len(self.elec_pos))
-        dV = np.zeros(len(self.elec_pos))
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
         self.export_data(cell)
-        self._find_steady_state(cell)
-        # print(self.record_dist)
-        # ss_pot[idx] = self.v_ss
-        # self._dV(cell)
-        # dV[idx] = self.dV
-        # elec_dists[idx] = self._record_dist_to_electrode(com_coords)
-        # cell.strip_hoc_objects()
+
         cell.__del__()
 
     def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, stop_time, passive=False):

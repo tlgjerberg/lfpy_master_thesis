@@ -20,7 +20,7 @@ RANK = COMM.Get_rank()
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
-
+cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
 
 current_amps = [1e4, -1e4, -7e3, 7e3]
 
@@ -45,9 +45,9 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
 
     if plot_sim:
         cell_vmem = np.load(join(extPotSim.save_folder,
-                                 f'Hallermann_x_shift=0_z_rot={z}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_vmem.npy'))
+                                 f'Hallermann_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_vmem.npy'))
         cell_tvec = np.load(join(extPotSim.save_folder,
-                                 f'Hallermann_x_shift=0_z_rot={z}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_tvec.npy'))
+                                 f'Hallermann_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_tvec.npy'))
         plotSim = PlotSimulations(
             cellsim_Hallermann_params, monophasic_pulse_params, cell_vmem, cell_tvec)
         cell = plotSim.return_cell(cell_models_folder)
