@@ -20,9 +20,7 @@ RANK = COMM.Get_rank()
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_double_morph'
 
-"""
-Placeholder variables
-"""
+
 # elec_positions = np.array(
 #     [[725, 0, -575], [800, 0, -575], [-800, 0, -575], [-725, 0, -575]])
 elec_positions = np.array(

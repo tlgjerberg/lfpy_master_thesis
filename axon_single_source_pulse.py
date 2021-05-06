@@ -86,7 +86,7 @@ for I in current_amps:
             continue
 
         v_ss = run_axon(cell_models_folder,
-                        measure_coordinates, I, pos, z, False, True)
+                        measure_coordinates, I, pos, z, True, True)
 
         print("RANK %d doing task %d" % (RANK, task_idx))
 

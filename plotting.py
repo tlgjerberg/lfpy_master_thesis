@@ -14,7 +14,7 @@ from mpl_toolkits import mplot3d
 class PlotSimulations(ExternalPotentialSim):
     def __init__(self, cell_params, elec_params, cell_vmem=None, cell_tvec=None):
         super().__init__(cell_params, elec_params)
-        # self.morph_ax_params = morph_ax_params  # Move to plot_morphology?
+
         self.vmem = cell_vmem
         self.tvec = cell_tvec
 
