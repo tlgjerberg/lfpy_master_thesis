@@ -31,7 +31,8 @@ class ExternalPotentialSim:
         self.cell_name = cell_params['cell_name']
         self.cell_dist_to_top = cell_params['cell_dist_to_top']
         self.x_shift = cell_params['x_shift']
-        self.z_rot = cell_params['z_rot']
+        self.y_shift = cell_params['y_shift']
+        self.z_rot = cell_params['z_rot']  # Rotation around z-axis
 
     def return_sim_name(self):
         sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_rot={self.z_rot:.2f}_{self.amp}mA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}'
@@ -90,24 +91,12 @@ class ExternalPotentialSim:
                                 join(model_path, 'charge.hoc')]
             }
 
-            cell = LFPy.Cell(**cell_parameters)
-            # self.cell = cell
             self.v_init = cell_parameters['v_init']
+            cell = LFPy.Cell(**cell_parameters)
 
-            # cell.set_pos(z=-np.max(cell.zend) -
-            #              self.cell_dist_to_top, x=self.x_shift)
-            # cell.set_rotation(z=self.z_rot)
-            # self.cell.set_pos(z=-self.cell_dist_to_top)
-            # Default rotation
-            # self.cell.set_rotation(x=4.729, y=-3.05, z=-3)
-            # Axon y-coordinate close to 0
-            # self.cell.set_rotation(x=4.9, y=-3.166, z=-3)
-            # Apical dendtrite measurement point at aprrox y=0
-            # self.cell.set_rotation(x=4.788, y=-3.166, z=-3)
-            """
-            Adjust positions as needed
-            """
-            cell.set_pos(z=-self.cell_dist_to_top)
+            # Adjusting the cell position and rotation
+            cell.set_pos(x=self.x_shift, y=self.y_shift,
+                         z=-self.cell_dist_to_top)
             cell.set_rotation(x=4.729, y=-3.05, z=self.z_rot)
             return cell
 
@@ -152,6 +141,7 @@ class ExternalPotentialSim:
         # Generating time steps of simulation
         n_tsteps = int(self.tstop / self.dt + 1)
         t = np.arange(n_tsteps) * self.dt
+        print(t)
 
         # Setting pulse change at a given time interval
         self.pulse = np.zeros(n_tsteps)
@@ -167,8 +157,8 @@ class ExternalPotentialSim:
 
         cell.insert_v_ext(v_cell_ext, t)
 
-    def run_cell_simulation(self, cell):
-        cell.simulate(rec_vmem=True, rec_imem=True)
+    def run_cell_simulation(self, cell, vmem=True, imem=False):
+        cell.simulate(rec_vmem=vmem, rec_imem=imem)
 
     def find_steady_state_pot(self, cell_vmem):
         """
@@ -204,25 +194,7 @@ class ExternalPotentialSim:
             coords = [cell.x[idx].mean(axis=0), cell.y[idx].mean(
                 axis=0), cell.z[idx].mean(axis=0)]
 
-    def run_ext_sim(self, cell_models_folder, com_coords, stop_time, passive=False):
-
-        cell = self.return_cell(cell_models_folder)
-        self.create_measure_points(cell, com_coords)
-        self.return_segment_coords(cell)
-
-        self.extracellular_stimuli(cell)
-        self.run_cell_simulation(cell)
-        self.export_data(cell)
-
-        cell.__del__()
-
-    def run_current_sim(self, cell_models_folder, elec_params, current_amps, positions, stop_time, passive=False):
-        cell = self.return_cell(cell_models_folder)
-
-        self.extracellular_stimuli(elec_params)
-        self.run_cell_simulation()
-
-    def export_data(self, cell):
+    def export_data(self, cell, vmem=True, imem=False):
         """
         Export data to text file:
         - compartments measured and their coordinates
@@ -231,5 +203,30 @@ class ExternalPotentialSim:
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
         file_name = self.return_sim_name()
-        np.save(join(self.save_folder, f'{file_name}_vmem'), cell.vmem)
         np.save(join(self.save_folder, f'{file_name}_tvec'), cell.tvec)
+
+        if vmem:
+            np.save(join(self.save_folder, f'{file_name}_vmem'), cell.vmem)
+
+        if imem:
+            np.save(join(self.save_folder, f'{file_name}_imem'), cell.imem)
+
+    def run_ext_sim(self, cell_models_folder, comp_coords, stop_time, passive=False):
+
+        cell = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell, comp_coords)
+        self.return_segment_coords(cell)
+
+        self.extracellular_stimuli(cell)
+        self.run_cell_simulation(cell)
+
+        self.export_data(cell)
+
+        cell.__del__()
+
+    def run_current_sim(self, cell_models_folder, comp_coords, passive=False):
+        cell = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell, comp_coords)
+        self.extracellular_stimuli(cell)
+        self.run_cell_simulation(cell, False, True)
+        self.export_data(cell, False, True)

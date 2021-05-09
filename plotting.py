@@ -10,12 +10,21 @@ import matplotlib
 from mpl_toolkits import mplot3d
 # matplotlib.use("AGG")
 
+font_params = {
+    'font.size': 10,
+    'axes.labelsize': 22
+
+}
+
+plt.rcParams.update(**font_params)
+
 
 class PlotSimulations(ExternalPotentialSim):
-    def __init__(self, cell_params, elec_params, cell_vmem=None, cell_tvec=None):
+    def __init__(self, cell_params, elec_params, cell_vmem=None, cell_tvec=None, cell_imem=None):
         super().__init__(cell_params, elec_params)
 
         self.vmem = cell_vmem
+        self.imem = cell_imem
         self.tvec = cell_tvec
 
     def plot_morphology(self, cell, morph_ax_params):
@@ -190,11 +199,8 @@ class PlotSimulations(ExternalPotentialSim):
 
     def plot_cellsim(self, cell, com_coords, z_rot, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200]):
         """
-        To add:
-        if placement:
-            plot in one figure
-        else:
-            separate figures?
+        Ploting a combined figure of cell morphology, current amplitude and
+        membrane potential
         """
         self.xlim = xlim
         self.ylim = ylim
@@ -237,7 +243,7 @@ class PlotSimulations(ExternalPotentialSim):
 
         self.fig.savefig(join(
             self.save_folder, f'point_source_{self.cell_name}_z_rot={self.z_rot}_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
-        # plt.show()
+        plt.show()
         plt.close(fig=self.fig)
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
@@ -270,22 +276,23 @@ class PlotSimulations(ExternalPotentialSim):
         fig.savefig(
             join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
 
-    def plot_currents(self, cell):
+    def plot_currents(self, cell, msre_coords, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200]):
 
-        # Midpoint index for pulse as an extra test point in time
-        self.mid_idx = (self.stop_idx + self.start_idx) // 2
+        self.xlim = xlim
+        self.ylim = ylim
+
+        start_time = self.elec_params['start_time']
+        stop_time = self.elec_params['stop_time']
+        # Defining indices for start midpoint and stop times of the pulse
+        start_idx = np.argmin(np.abs(self.tvec - start_time))
+        stop_idx = np.argmin(np.abs(self.tvec - stop_time))
+        mid_idx = (stop_idx + start_idx) // 2
 
         # Time indices for snapshots currents
         timepoints = np.array(
-            [self.start_idx + 1, self.mid_idx, self.stop_idx])
+            [start_idx + 1, mid_idx, stop_idx])
 
-        # Extracting axial currents and their coordinates
-        ax_current, _, pos_coord = cell.get_axial_currents_from_vmem(
-            timepoints=timepoints)
-
-        save_folder = 'axon_bisc_currents'
-
-        self.save_folder = join(self.root_folder, save_folder)
+        self.create_measure_points(cell, msre_coords)
 
         self.fig = plt.figure()  # figsize=[18, 8]
 
@@ -295,10 +302,9 @@ class PlotSimulations(ExternalPotentialSim):
         self.cell_plot_colors = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
-        self.morph_ax_params = [0.6, 0.05, 0.2, 0.90]
+        morph_ax_params = [0.6, 0.05, 0.2, 0.90]
 
-        self.plot_morphology()
-        self.plot_external_field()
+        self.plot_morphology(cell, morph_ax_params)
 
         ax_top = 0.90
         ax_h = 0.30
@@ -309,23 +315,18 @@ class PlotSimulations(ExternalPotentialSim):
         ax_tmc = self.fig.add_axes([ax_left, ax_top - ax_h, ax_w, ax_h],  # ylim=[-120, 50],
                                    xlim=[0, self.tstop], ylabel='Transmembrane Current (mV)', xlabel="Time (ms)")
 
-        # [ax_tmc.plot(cell.tvec, cell.imem[idx, :],
-        #              c=cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
-
-        self.plot_membrane_potential(mem_axes_placement)
-
         # Plotting snapshots at start and stop times of current pulse
         fig_snap1, ax_snap1 = plt.subplots()
         ax_snap1.plot(
-            cell.imem[:, self.start_idx + 1], cell.zmid, 'o-')
+            self.imem[:, start_idx + 1], cell.zmid, 'o-')
         ax_snap1.axvline(0, ls="--", c='grey')
-        ax_snap1.set_xlabel(f'Current at time {self.start_idx + 1} (nA)')
+        ax_snap1.set_xlabel(f'Current at time {start_idx + 1} (nA)')
         ax_snap1.set_ylabel('Cell Compartments in z direction')
 
         fig_snap2, ax_snap2 = plt.subplots()
         ax_snap2.axvline(0, ls="--", c='grey')
-        ax_snap2.plot(cell.imem[:, self.stop_idx], cell.zmid, 'o-')
-        ax_snap1.set_xlabel(f'Current at time {self.stop_idx} (nA)')
+        ax_snap2.plot(self.imem[:, stop_idx], cell.zmid, 'o-')
+        ax_snap1.set_xlabel(f'Current at time {stop_idx} (nA)')
         ax_snap1.set_ylabel('Cell Compartments in z direction')
 
         # Plotting axial current along the z-direction of
@@ -342,11 +343,11 @@ class PlotSimulations(ExternalPotentialSim):
         self.fig.savefig(join(
             self.save_folder, f'transmembrane_current_amp={self.amp}.png'), dpi=300)
         fig_snap1.savefig(join(
-            self.save_folder, f'transmembrane_current_snapshot t={self.start_idx + 1}.png'), dpi=300)
+            self.save_folder, f'transmembrane_current_snapshot t={start_idx + 1}.png'), dpi=300)
         fig_snap2.savefig(join(
-            self.save_folder, f'transmembrane_current_snapshot t={self.stop_idx}.png'), dpi=300)
+            self.save_folder, f'transmembrane_current_snapshot t={stop_idx}.png'), dpi=300)
         fig_axial.savefig(join(
-            self.save_folder, f'axial_current_soma_snapshot t={timepoints[0]}.png'), dpi=300)
+            self.save_folder, f'axial_current_soma_snapshot t={mid_idx}.png'), dpi=300)
 
         # plt.show()
 

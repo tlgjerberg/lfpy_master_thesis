@@ -20,12 +20,14 @@ RANK = COMM.Get_rank()
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
-cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
+# cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
 
-current_amps = [1e4, -1e4, -7e3, 7e3]
+# current_amps = [1e4, -1e4, -7e3, 7e3]
+current_amps = [1e4, -1e4]
+
 
 measure_coordinates = np.array(
-    [[0, 0, 0], [127, 126, 866], [-393, 39, 1101]])
+    [[0, 0, 0], [127, 126, 866], [-393, 39, 1101], [123, 100, 443]])
 
 elec_positions = set_electrode_pos(measure_coordinates)
 
