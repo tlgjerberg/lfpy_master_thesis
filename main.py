@@ -113,8 +113,19 @@ class ExternalPotentialSim:
             measure_pnts.append(cell.get_closest_idx(x, y, z))
 
         self.measure_pnts = np.array(measure_pnts)
-        # print('measure_coord', cell.x[self.measure_pnts[0]].mean(
-        # ), cell.y[self.measure_pnts[0]].mean(), cell.z[self.measure_pnts[0]].mean())
+
+    def print_measure_points(self, cell):
+
+        if hasattr(self, "measure_pnts"):
+
+            print(self.measure_pnts)
+
+            for mc in self.measure_pnts:
+                print('measure_coord', cell.x[mc].mean(),
+                      cell.y[mc].mean(), cell.z[mc].mean())
+
+        else:
+            raise NameError("create_measure_points() method must be called")
 
     def extracellular_stimuli(self, cell):
         """
@@ -141,7 +152,6 @@ class ExternalPotentialSim:
         # Generating time steps of simulation
         n_tsteps = int(self.tstop / self.dt + 1)
         t = np.arange(n_tsteps) * self.dt
-        print(t)
 
         # Setting pulse change at a given time interval
         self.pulse = np.zeros(n_tsteps)
@@ -168,6 +178,16 @@ class ExternalPotentialSim:
         v_ss_idx = np.argmax(cell_vmem)
         # find_diff = np.diff(cell.vmem)
         return v_ss
+
+    def find_max_mem_pot(self, cell_vmem):
+
+        v_max = {}
+
+        for mp in self.measure_pnts:
+
+            v_max[f'{mp}'] = np.max(cell_vmem[mp])
+
+        return v_max
 
     def dV(self, v_ss):
         v_ss = [i for i in v_ss if i]
@@ -219,6 +239,7 @@ class ExternalPotentialSim:
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
+        self.find_max_mem_pot(cell.vmem)
 
         self.export_data(cell)
 

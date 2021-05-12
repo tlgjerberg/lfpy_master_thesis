@@ -19,17 +19,18 @@ RANK = COMM.Get_rank()
 
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
-# cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
+# cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
+cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
 
-# current_amps = [1e4, -1e4, -7e3, 7e3]
-current_amps = [1e4, -1e4]
+# current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
+current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
 
 
-measure_coordinates = np.array(
-    [[0, 0, 0], [127, 126, 866], [-393, 39, 1101], [123, 100, 443]])
+measure_coords = np.array(
+    [[0, 0, 0], [127, 126, 866], [-393, 80, 1101], [123, 90, 443]])
 
-elec_positions = set_electrode_pos(measure_coordinates)
+
+elec_pos = set_electrode_pos(measure_coords, -30, 40)
 
 
 def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=False, plot_sim=False):
@@ -60,13 +61,10 @@ start = time.time()
 z = np.pi
 task_idx = -1
 for I in current_amps:
-    for pos in elec_positions:
-        task_idx += 1
-        if not divmod(task_idx, SIZE)[1] == RANK:
-            continue
+    for pos in elec_pos:
 
-        run_hallermann(cell_models_folder,
-                       measure_coordinates, I, pos, z, True, True)
+        run_hallermann(
+            cell_models_folder, measure_coords, I, pos, z, True, True)
         print("RANK %d doing task %d" % (RANK, task_idx))
 
 

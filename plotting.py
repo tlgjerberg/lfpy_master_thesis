@@ -143,7 +143,7 @@ class PlotSimulations(ExternalPotentialSim):
                        [0], self.elec_params["positions"][2]]
 
         self.ax_m.add_artist(Ellipse(ellipse_pos, width=10 * self.elec_params["electrode_radii"],
-                                     height=self.elec_params["electrode_radii"] / 5, fc='gray', ec='black'))
+                                     height=10 * self.elec_params["electrode_radii"], fc='gray', ec='black'))
 
     def plot_external_field(self, cell):
 
@@ -224,7 +224,7 @@ class PlotSimulations(ExternalPotentialSim):
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
         self.plot_morphology(cell, morph_ax_params)
-        self.plot_external_field(cell)
+        # self.plot_external_field(cell)
 
         # # Setting size and location of plotted potentials and current
         ax_top = 0.90
@@ -243,7 +243,7 @@ class PlotSimulations(ExternalPotentialSim):
 
         self.fig.savefig(join(
             self.save_folder, f'point_source_{self.cell_name}_z_rot={self.z_rot}_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
-        plt.show()
+        # plt.show()
         plt.close(fig=self.fig)
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
@@ -374,6 +374,7 @@ class PlotSimulations(ExternalPotentialSim):
 
         if self.elec_pos[0] > 0:
             self.draw_electrode()
+
         cell1.__del__()
 
         self.z_rot = z_rot[1]
@@ -386,6 +387,7 @@ class PlotSimulations(ExternalPotentialSim):
 
         if self.elec_pos[0] < 0:
             self.draw_electrode()
+
         cell2.__del__()
 
         if not os.path.isdir(self.save_folder):
@@ -410,5 +412,5 @@ class PlotSimulations(ExternalPotentialSim):
 
         self.fig.savefig(join(
             self.save_folder, f'double_vmem_{self.cell_name}_z_rot={self.z_rot}_point_amp={self.amp}uA_elec_pos={self.elec_pos}.png'))
-        plt.show()
+        # plt.show()
         plt.close(fig=self.fig)
