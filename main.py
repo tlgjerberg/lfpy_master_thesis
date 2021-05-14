@@ -108,9 +108,16 @@ class ExternalPotentialSim:
 
         measure_pnts = []
 
-        for i in range(com_coords.shape[0]):
-            x, y, z = com_coords[i, :]
+        if com_coords.ndim == 1:
+
+            x, y, z = com_coords
             measure_pnts.append(cell.get_closest_idx(x, y, z))
+
+        else:
+
+            for i in range(com_coords.shape[0]):
+                x, y, z = com_coords[i, :]
+                measure_pnts.append(cell.get_closest_idx(x, y, z))
 
         self.measure_pnts = np.array(measure_pnts)
 
