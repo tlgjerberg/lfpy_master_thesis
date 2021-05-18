@@ -35,8 +35,8 @@ cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_fie
 
 
 # current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
-current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
-# current_amps = [4e3]
+# current_amps = [-1e4, -9e3, -8e3, -7e3]
+current_amps = [-6e3, -5e3, -4.5e3, -4e3]
 
 measure_coords = np.array(
     [[0, 0, 0], [-393, 80, 1101], [123, 90, 443], [127, 126, 866]])

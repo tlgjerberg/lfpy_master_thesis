@@ -246,8 +246,6 @@ class ExternalPotentialSim:
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
-        self.find_max_mem_pot(cell.vmem)
-
         self.export_data(cell)
 
         cell.__del__()
