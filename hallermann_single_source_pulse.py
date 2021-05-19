@@ -22,8 +22,8 @@ cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 # cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
 cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
 
-# current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
-current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
+current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
+# current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
 
 
 measure_coords = np.array(
@@ -62,7 +62,9 @@ z = np.pi
 task_idx = -1
 for I in current_amps:
     for pos in elec_pos:
-
+        task_idx += 1
+        if not divmod(task_idx, SIZE)[1] == RANK:
+            continue
         run_hallermann(
             cell_models_folder, measure_coords, I, pos, z, True, True)
         print("RANK %d doing task %d" % (RANK, task_idx))

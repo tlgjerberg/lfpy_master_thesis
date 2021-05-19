@@ -230,10 +230,12 @@ class ExternalPotentialSim:
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
         file_name = self.return_sim_name()
+
+        print(cell.vmem.shape)
+
         np.save(join(self.save_folder, f'{file_name}_tvec'), cell.tvec)
 
-        if vmem:
-            np.save(join(self.save_folder, f'{file_name}_vmem'), cell.vmem)
+        np.save(join(self.save_folder, f'{file_name}_vmem'), cell.vmem)
 
         if imem:
             np.save(join(self.save_folder, f'{file_name}_imem'), cell.imem)
