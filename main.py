@@ -240,7 +240,7 @@ class ExternalPotentialSim:
         if imem:
             np.save(join(self.save_folder, f'{file_name}_imem'), cell.imem)
 
-    def run_ext_sim(self, cell_models_folder, comp_coords, stop_time, passive=False):
+    def run_ext_sim(self, cell_models_folder, comp_coords, passive=False):
 
         cell = self.return_cell(cell_models_folder)
         self.create_measure_points(cell, comp_coords)
@@ -248,6 +248,8 @@ class ExternalPotentialSim:
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
+        v_max = self.find_max_mem_pot(cell.vmem)
+        print(v_max)
         self.export_data(cell)
 
         cell.__del__()

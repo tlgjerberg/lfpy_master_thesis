@@ -12,7 +12,7 @@ from mpl_toolkits import mplot3d
 
 font_params = {
     'font.size': 10,
-    'axes.labelsize': 22
+    'axes.labelsize': 18
 
 }
 
@@ -27,11 +27,11 @@ class PlotSimulations(ExternalPotentialSim):
         self.imem = cell_imem
         self.tvec = cell_tvec
 
-    def plot_morphology(self, cell, morph_ax_params):
+    def plot_morphology(self, cell, fig, morph_ax_params=[0.1, 0.1, 0.5, 0.5]):
 
         # Adding axes with appropriate parameters
-        self.ax_m = self.fig.add_axes(morph_ax_params, aspect=1, frameon=False,
-                                      xticks=[], yticks=[], ylim=self.ylim, xlim=self.xlim)
+        self.ax_m = fig.add_axes(morph_ax_params, aspect=1, frameon=False,
+                                 xticks=[], yticks=[], ylim=self.ylim, xlim=self.xlim)
         # Names of different neuron parts and color codings for each
         possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
                           "hill", "apic", "dend", "soma"]
@@ -179,10 +179,10 @@ class PlotSimulations(ExternalPotentialSim):
         # Add colorbar corresonding to field strength in mV
         self.fig.colorbar(self.ext_field_im, pad=0.05, ax=self.ax_m, cax=cax)
 
-    def plot_membrane_potential(self, placement):
+    def plot_membrane_potential(self, fig, placement):
 
-        ax_vm = self.fig.add_axes(placement,  # ylim=[-120, 50],
-                                  xlim=[0, self.tstop], xlabel="Time (ms)")
+        ax_vm = fig.add_axes(placement,  # ylim=[-120, 50],
+                             xlim=[0, self.tstop], xlabel="Time (ms)")
 
         ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
 
@@ -190,10 +190,10 @@ class PlotSimulations(ExternalPotentialSim):
         [ax_vm.plot(self.tvec, self.vmem[idx],
                     c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
 
-    def plot_current_pulse(self, placement):
+    def plot_current_pulse(self, fig, placement):
 
-        ax_stim = self.fig.add_axes(placement, xlim=[0, self.tstop],
-                                    ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
+        ax_stim = fig.add_axes(placement, xlim=[0, self.tstop],
+                               ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
         # ax_stim.set_ylabel("$\mu$A", labelpad=-2)
         ax_stim.plot(self.tvec, self.pulse / 1000, lw=0.5)
 
@@ -223,7 +223,7 @@ class PlotSimulations(ExternalPotentialSim):
         self.cell_plot_colors = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
-        self.plot_morphology(cell, morph_ax_params)
+        self.plot_morphology(cell, fig, morph_ax_params)
         # self.plot_external_field(cell)
 
         # # Setting size and location of plotted potentials and current
@@ -234,8 +234,8 @@ class PlotSimulations(ExternalPotentialSim):
         stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
         mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
 
-        self.plot_membrane_potential(mem_axes_placement)
-        self.plot_current_pulse(stim_axes_placement)
+        self.plot_membrane_potential(fig, mem_axes_placement)
+        self.plot_current_pulse(fig, stim_axes_placement)
         self.draw_electrode()
 
         if not os.path.isdir(self.save_folder):
