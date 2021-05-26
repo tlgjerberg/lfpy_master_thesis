@@ -29,7 +29,7 @@ Improve plot_cellsim_alt for easy reading and page formatting.
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 cellsim_bisc_stick_params['save_folder_name'] = 'data/axon_bisc_dist_stim'
-current_amps = [-1e4]  # uA
+
 elec_positions = np.array([[0, 0, -50],
                            [0, 0, -100],
                            [0, 0, -200],
@@ -52,7 +52,7 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
     if run_sim:
         elec_positions = set_electrode_pos(measure_coordinates)
 
-        extPotSim.run_ext_sim(cell_models_folder, measure_coordinates, 20, z)
+        extPotSim.run_ext_sim(cell_models_folder, measure_coordinates, z)
 
     else:
         print('No simulation run!')
@@ -66,7 +66,8 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
         plotSim = PlotSimulations(
             cellsim_bisc_stick_params, monophasic_pulse_params, cell_vmem, cell_tvec)
         cell = plotSim.return_cell(cell_models_folder)
-        plotSim.plot_cellsim(cell, measure_coords, z, [0.05, 0.05, 0.3, 0.90])
+        plotSim.plot_cellsim(cell, measure_coords, z, [
+                             0.05, 0.05, 0.3, 0.90], [-300, 300], [-1000, 1100])
 
         v_ss = extPotSim.find_steady_state_pot(cell_vmem)
     else:
@@ -77,18 +78,19 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
 
 start = time.time()
 z = np.pi
+I = -1e4  # uA
 task_idx = -1
 v_ss = None
-for I in current_amps:
-    for pos in elec_positions:
-        task_idx += 1
-        if not divmod(task_idx, SIZE)[1] == RANK:
-            continue
 
-        v_ss = run_axon(cell_models_folder,
-                        measure_coordinates, I, pos, z, True, True)
+for pos in elec_positions:
+    task_idx += 1
+    if not divmod(task_idx, SIZE)[1] == RANK:
+        continue
 
-        print("RANK %d doing task %d" % (RANK, task_idx))
+    v_ss = run_axon(cell_models_folder,
+                    measure_coordinates, I, pos, z, True, True)
+
+    print("RANK %d doing task %d" % (RANK, task_idx))
 
 # Gathering steady state membrane potential at root
 v_ss = COMM.gather(v_ss, root=0)

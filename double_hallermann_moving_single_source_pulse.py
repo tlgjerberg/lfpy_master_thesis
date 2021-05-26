@@ -22,7 +22,7 @@ cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_double_morph'
 
 
 elec_positions = np.array(
-    [[700, 60, -548], [750, 60, -548], [-750, -50, -548], [-700, -50, -548]])
+    [[700, 60, -352], [750, 60, -352], [-750, -50, -352], [-700, -50, -352]])
 
 current_amps = [-1e4]
 

@@ -29,9 +29,12 @@ def idx_to_sec_conversion(num_key='0'):
     return idx_to_sec.get(num_key, "no index")
 
 
+x_shift = -30
+z_shift = 40
+
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 # cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
-cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
+cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field/'
 
 
 # current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
@@ -40,7 +43,8 @@ current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
 measure_coords = np.array(
     [[0, 0, 0], [-393, 80, 1101], [123, 90, 443], [127, 126, 866]])
 
-elec_pos = set_electrode_pos(measure_coords, -30, 40)
+
+elec_pos = set_electrode_pos(measure_coords, x_shift, z_shift)
 
 
 measure_keys = ['soma', 'apic', 'axon', 'axon_term']
@@ -48,7 +52,7 @@ value = []
 
 v_max_sorted = {key: list(value) for key in measure_keys}
 
-z = np.pi
+z = 3
 task_idx = -1
 for idx, pos in enumerate(elec_pos):
     for I in current_amps:
@@ -84,18 +88,36 @@ axon_v_max = COMM.gather(v_max_sorted['axon'], root=0)
 
 
 if RANK == 0:
-    soma_v_max_cons = sorted(list(flatten(soma_v_max)))
-    apic_v_max_cons = sorted(list(flatten(apic_v_max)))
-    axon_terminal_v_max_cons = sorted(list(flatten(axon_terminal_v_max)))
-    axon_v_max_cons = sorted(list(flatten(axon_v_max)))
+    soma_v_max_cons = sorted(list(flatten(soma_v_max)), reverse=True)
+    apic_v_max_cons = sorted(list(flatten(apic_v_max)), reverse=True)
+    axon_terminal_v_max_cons = sorted(
+        list(flatten(axon_terminal_v_max)), reverse=True)
+    axon_v_max_cons = sorted(list(flatten(axon_v_max)), reverse=True)
     current_amps_sorted = sorted(current_amps)
 
-    plt.plot(current_amps_sorted, soma_v_max_cons, 'o-')
-    plt.plot(current_amps_sorted, axon_terminal_v_max_cons, 'o-')
-    plt.plot(current_amps_sorted, apic_v_max_cons, 'o-')
-    plt.plot(current_amps_sorted, axon_v_max_cons, 'o-')
+    plotSim = PlotSimulations(
+        cellsim_Hallermann_params, monophasic_pulse_params)
+    cell = plotSim.return_cell(cell_models_folder)
+    plotSim.create_measure_points(cell, measure_coords)
+    plotSim.xlim = [-500, 500]
+    plotSim.ylim = [-300, 1200]
+    plotSim.cell_plot_idxs = plotSim.measure_pnts.astype(
+        dtype='int')  # List of measurement points
+
+    plotSim.cell_plot_colors = {idx: [
+        'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(plotSim.cell_plot_idxs)}
+    fig = plt.figure(figsize=[12, 6])
+    plotSim.plot_morphology(cell, fig, [0.05, 0.1, 0.3, 0.9])
+
+    ax = fig.add_axes([0.45, 0.225, 0.5, 0.6])
+
+    ax.plot(current_amps_sorted, soma_v_max_cons, 'o-')
+    ax.plot(current_amps_sorted, axon_terminal_v_max_cons, 'o-')
+    ax.plot(current_amps_sorted, apic_v_max_cons, 'o-')
+    ax.plot(current_amps_sorted, axon_v_max_cons, 'o-')
     plt.xlabel('Electode Current Amplitude ($\mu A$)')
     plt.ylabel('Membrane Potential (mV)')
     plt.legend(['Soma', 'Axon Terminal', 'Apical Dendrite', 'Axon'])
-    # plt.show()
-    plt.savefig(join(extPotSim.save_folder, f'v_max_current.png'))
+    plt.show()
+    fig.savefig(join(extPotSim.save_folder,
+                     f'v_max_current_x_shift={x_shift}_z_shift={z_shift}.png'))

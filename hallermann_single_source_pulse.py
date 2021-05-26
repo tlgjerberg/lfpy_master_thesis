@@ -17,20 +17,23 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
+x_shift = -30
+z_shift = 40
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 # cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
 cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
 
+
 # current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
-# current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
-current_amps = [-6e3, -5e3, -4.5e3, -4e3]
+current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
+# current_amps = [-6e3, -5e3, -4.5e3, -4e3]
 
 measure_coords = np.array(
     [[0, 0, 0], [-393, 80, 1101], [123, 90, 443], [127, 126, 866]])
 
 
-elec_pos = set_electrode_pos(measure_coords, -30, 40)
+elec_pos = set_electrode_pos(measure_coords, x_shift, z_shift)
 
 
 def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=False, plot_sim=False):

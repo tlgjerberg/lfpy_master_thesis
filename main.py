@@ -32,10 +32,11 @@ class ExternalPotentialSim:
         self.cell_dist_to_top = cell_params['cell_dist_to_top']
         self.x_shift = cell_params['x_shift']
         self.y_shift = cell_params['y_shift']
+        self.y_rot = cell_params['y_rot']
         self.z_rot = cell_params['z_rot']  # Rotation around z-axis
 
     def return_sim_name(self):
-        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_rot={self.z_rot:.2f}_{self.amp}mA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}'
+        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_{self.amp}mA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}'
 
         return sim_name
 
@@ -57,9 +58,11 @@ class ExternalPotentialSim:
                 "pt3d": True,
                 "extracellular": True,
             }
-            cell = LFPy.Cell(**cell_parameters)
             self.v_init = cell_parameters['v_init']
-
+            cell = LFPy.Cell(**cell_parameters)
+            cell.set_rotation(x=0, y=self.y_rot, z=self.z_rot)
+            cell.set_pos(x=self.x_shift, y=self.y_shift,
+                         z=self.cell_dist_to_top)
             return cell
 
         elif self.cell_name == 'Hallermann':
@@ -231,14 +234,15 @@ class ExternalPotentialSim:
             os.makedirs(self.save_folder)
         file_name = self.return_sim_name()
 
-        print(cell.vmem.shape)
+        np.save(join(self.save_folder,
+                     f'{file_name}_tvec'), cell.tvec)
 
-        np.save(join(self.save_folder, f'{file_name}_tvec'), cell.tvec)
-
-        np.save(join(self.save_folder, f'{file_name}_vmem'), cell.vmem)
+        np.save(join(self.save_folder,
+                     f'{file_name}_vmem'), cell.vmem)
 
         if imem:
-            np.save(join(self.save_folder, f'{file_name}_imem'), cell.imem)
+            np.save(join(self.save_folder,
+                         f'{file_name}_imem'), cell.imem)
 
     def run_ext_sim(self, cell_models_folder, comp_coords, passive=False):
 
@@ -248,8 +252,6 @@ class ExternalPotentialSim:
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
-        v_max = self.find_max_mem_pot(cell.vmem)
-        print(v_max)
         self.export_data(cell)
 
         cell.__del__()
