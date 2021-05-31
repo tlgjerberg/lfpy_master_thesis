@@ -35,15 +35,15 @@ class PlotSimulations(ExternalPotentialSim):
                                  xticks=[], yticks=[], ylim=self.ylim, xlim=self.xlim)
 
         # Names of different neuron parts and color codings for each
-        possible_names = ["Myelin", "axon", "Unmyelin", "Node", "hilloc",
+        possible_names = ["my", "axon", "Unmyelin", "node", "hilloc",
                           "hill", "apic", "dend", "soma"]
-        sec_clrs = {"Myelin": 'olive',
+        sec_clrs = {"my": 'olive',
                     "dend": '0.3',
                     "soma": 'k',
                     'apic': '0.6',
                     "axon": 'lightgreen',
                     "Unmyelin": 'salmon',
-                    "Node": 'r',
+                    "node": 'r',
                     "hilloc": 'lightblue',
                     "hill": 'pink', }
         used_clrs = []
@@ -144,7 +144,7 @@ class PlotSimulations(ExternalPotentialSim):
         self.ax_m.add_artist(Ellipse(ellipse_pos, width=10 * self.elec_params["electrode_radii"],
                                      height=10 * self.elec_params["electrode_radii"], fc='gray', ec='black'))
 
-    def plot_external_field(self, cell, fig):
+    def plot_external_field(self, cell, fig, cb=False):
 
         # Adding external field visualization to cell morphology figure
         field_x_dim = abs(self.xlim[0]) + abs(self.xlim[1])
@@ -168,7 +168,9 @@ class PlotSimulations(ExternalPotentialSim):
         self.ext_field_im = self.ax_m.pcolormesh(
             xf, zf, v_field_ext.T, cmap='bwr', vmin=-vmax, vmax=vmax, shading='auto')
 
-        self.add_colorbar(fig)
+        # Adding colorbar if enabled
+        if cb:
+            self.add_colorbar(fig)
 
     def add_colorbar(self, fig):
 
@@ -196,7 +198,63 @@ class PlotSimulations(ExternalPotentialSim):
 
         ax_stim.plot(self.tvec, self.pulse / 1000, lw=0.5)
 
-    def plot_cellsim(self, com_coords, z_rot, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200], field=False):
+    def plot_cellsim(self, com_coords, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200], field=False):
+        """
+        Ploting a combined figure of cell morphology, current amplitude and
+        membrane potential
+        """
+
+        # Dimensions of the morphology
+        self.xlim = xlim
+        self.ylim = ylim
+
+        # Recreating the cell object used in simulatios without running simul
+        cell = self.return_cell(self.cell_models_folder)
+        self.create_measure_points(cell, com_coords)
+        self.extracellular_stimuli(cell)
+
+        # Simulating cell after all parameters and field has been added
+        fig = plt.figure(figsize=[10, 8])
+
+        # Defining figure frame and parameters for combined figure
+        fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
+                            top=0.9, bottom=0.1)
+
+        # Marking the compartments of measurement with individual colors
+        self.cell_plot_idxs = self.measure_pnts.astype(
+            dtype='int')  # List of measurement points
+
+        self.cell_plot_colors = {idx: [
+            'b', 'cyan', 'orange', 'green', 'purple', 'yellow'][num] for num, idx in enumerate(self.cell_plot_idxs)}
+
+        # Adding morphology to figure
+        self.plot_morphology(cell, fig, morph_ax_params)
+
+        if field:
+            self.plot_external_field(cell, fig)
+
+        # # Setting size and location of plotted potentials and current
+        ax_top = 0.90
+        ax_h = 0.30
+        ax_w = 0.45
+        ax_left = 0.5
+        stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
+        mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
+
+        self.plot_membrane_potential(fig, mem_axes_placement)
+        self.plot_current_pulse(fig, stim_axes_placement)
+        self.draw_electrode()
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        self.return_sim_name()
+        fig.savefig(join(
+            self.save_folder, f'point_source_' + self.sim_name + '.png'))
+        # plt.show()
+        plt.close(fig=fig)
+
+    def plot_cellsim_angle(self, com_coords, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200], field=False):
         """
         Ploting a combined figure of cell morphology, current amplitude and
         membrane potential
@@ -223,27 +281,25 @@ class PlotSimulations(ExternalPotentialSim):
             'orange', 'b', 'cyan',  'green', 'purple', 'r', 'yellow'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
         self.plot_morphology(cell, fig, morph_ax_params)
-
+        self.draw_electrode()
         if field:
             self.plot_external_field(cell, fig)
 
-        # # Setting size and location of plotted potentials and current
-        ax_top = 0.90
+        # Setting size and location of plotted potentials and current
+        ax_top = 0.30
         ax_h = 0.30
         ax_w = 0.45
         ax_left = 0.5
-        stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
-        mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
+        mem_axes_placement = [ax_left, ax_top, ax_w, ax_h]
 
         self.plot_membrane_potential(fig, mem_axes_placement)
-        self.plot_current_pulse(fig, stim_axes_placement)
-        self.draw_electrode()
 
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
+        self.return_sim_name()
         fig.savefig(join(
-            self.save_folder, f'point_source_{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_x={self.x0}_z={self.z0}.png'))
+            self.save_folder, f'point_source_' + self.sim_name + '.png'))
         plt.show()
         plt.close(fig=fig)
 
