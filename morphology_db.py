@@ -48,7 +48,8 @@ Layer_depths = dict(
 
 """
 To make sure cell variants are grouped correctly run:
-# of cells % # of processes == 5
+# of cells % # of processes == 5 to to keep the sets of same type of cell in one
+batch.
 """
 start_time = time.time()
 if RANK == 0:
@@ -58,10 +59,16 @@ if RANK == 0:
     if not os.path.isdir(target_dir):
         unzip_directory(zip_dir, target_dir)
 
-    neurons = sorted(
-        glob(join('hoc_combos_syn.1_0_10.unzipped', 'L1*')))[:1]
-
+    neuron_names = ['BP', 'BTC', 'DBC', 'MC']
+    nneurons = []
+    for name in neuron_names:
+        n = sorted(
+            glob(join('hoc_combos_syn.1_0_10.unzipped', 'L5_' + name + '*')))
+        nneurons.append(n)
     # Splitting list of neurons into chunks equal to number of processes
+    # print(nneurons)
+    neurons = [j for sub in nneurons for j in sub]
+    # print(neurons)
     neuron_chunks = list(chunks(neurons, SIZE))
 
 else:
@@ -130,7 +137,7 @@ for nrn in neuron_chunks:
                     # print('secname: ', secname, 'terminal_idx: ', terminal_idx,
                     #       'z_pos: ', cell.z[terminal_idx].mean(axis=0))
 
-    # cell.set_rotation(x=np.pi / 2, y=-0.1)
+            cell.set_rotation(x=np.pi / 2, y=-0.1)
             morph_name = nrn[31:]  # Name of the morphology
 
             # Morphology of each cell variant
@@ -139,7 +146,7 @@ for nrn in neuron_chunks:
             ax1.plot(cell.x.T, cell.z.T, c='k')
             ax1.plot(cell.x[axon_terminals].mean(axis=1),
                      cell.z[axon_terminals].mean(axis=1), 'y*')
-    # ax1.set_ylim(165, 0)
+            ax1.set_ylim(1382, 857)
 
     plt.savefig(join(f"test/find_axon_test_{morph_name}_depth{z}.png"))
 

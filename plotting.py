@@ -131,16 +131,19 @@ class PlotSimulations(ExternalPotentialSim):
         ax_3dmorph.set_ylabel(r'y[$\mu m$]')
         ax_3dmorph.set_zlabel(r'z[$\mu m$]')
 
-        [ax_3dmorph.plot(cell.x.mean(axis=1)[idx], cell.y.mean(axis=1)[idx], cell.z.mean(axis=1)[idx], 'o',
-                         c=self.cell_plot_colors[idx], ms=3) for idx in self.cell_plot_idxs]
+        # [ax_3dmorph.plot(cell.x.mean(axis=1)[idx], cell.z.mean(axis=1)[idx], 'o',
+        #                  c=self.cell_plot_colors[idx], ms=7) for idx in self.cell_plot_idxs]
 
+        ax_3dmorph.scatter(self.elec_params["positions"]
+                           [0], self.elec_params["positions"]
+                           [1], self.elec_params["positions"][2])
+        plt.show()
         fig_3dmorph.savefig(
             join(self.save_folder, f'{self.cell_name}_{self.amp}mA_elec_pos={self.elec_pos}.png'))
 
     def draw_electrode(self):
         ellipse_pos = [self.elec_params["positions"]
                        [0], self.elec_params["positions"][2]]
-
         self.ax_m.add_artist(Ellipse(ellipse_pos, width=10 * self.elec_params["electrode_radii"],
                                      height=10 * self.elec_params["electrode_radii"], fc='gray', ec='black'))
 
@@ -198,7 +201,7 @@ class PlotSimulations(ExternalPotentialSim):
 
         ax_stim.plot(self.tvec, self.pulse / 1000, lw=0.5)
 
-    def plot_cellsim(self, com_coords, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200], field=False):
+    def plot_cellsim(self, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
         """
         Ploting a combined figure of cell morphology, current amplitude and
         membrane potential
@@ -254,7 +257,7 @@ class PlotSimulations(ExternalPotentialSim):
         # plt.show()
         plt.close(fig=fig)
 
-    def plot_cellsim_angle(self, com_coords, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200], field=False):
+    def plot_cellsim_angle(self, com_coords, morph_ax_params, xlim=[-100, 2000], ylim=[-2000, 2000], field=False):
         """
         Ploting a combined figure of cell morphology, current amplitude and
         membrane potential
@@ -285,23 +288,26 @@ class PlotSimulations(ExternalPotentialSim):
         if field:
             self.plot_external_field(cell, fig)
 
-        # Setting size and location of plotted potentials and current
-        ax_top = 0.30
-        ax_h = 0.30
-        ax_w = 0.45
-        ax_left = 0.5
-        mem_axes_placement = [ax_left, ax_top, ax_w, ax_h]
-
-        self.plot_membrane_potential(fig, mem_axes_placement)
-
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
         self.return_sim_name()
         fig.savefig(join(
             self.save_folder, f'point_source_' + self.sim_name + '.png'))
-        plt.show()
+        # Setting size and location of plotted potentials and current
+        fig_mem = plt.figure(figsize=[10, 4])
+        ax_bot = 0.15
+        ax_h = 0.7
+        ax_w = 0.7
+        ax_left = 0.15
+        mem_axes_placement = [ax_left, ax_bot, ax_w, ax_h]
+
+        self.plot_membrane_potential(fig_mem, mem_axes_placement)
+        fig.savefig(join(
+            self.save_folder, f'mem_pot_' + self.sim_name + '.png'))
+        # plt.show()
         plt.close(fig=fig)
+        plt.close(fig=fig_mem)
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
 

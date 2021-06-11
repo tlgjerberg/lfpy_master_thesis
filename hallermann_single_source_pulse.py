@@ -17,8 +17,17 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-x_shift = -30
-z_shift = 40
+x_shift = -100
+z_shift = 0
+# x_shift = -30
+# z_shift = 40
+# x_shift = -40
+# z_shift = 30
+# x_shift = 100
+# z_shift = 0
+# x_shift = 0
+# z_shift = 100
+
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 # cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
@@ -26,11 +35,16 @@ cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_fie
 
 
 # current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
-current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
-# current_amps = [-6e3, -5e3, -4.5e3, -4e3]
+# current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
+# current_amps = [-3.5e3, -3e3]
+# current_amps = [-2e4, -1.9e4, -1.8e4, -1.7e4, -
+#                 1.6e4, -1.5e4, -1.4e4, -1.3e4, -1.2e4, -1.1e4, -1e4]
+current_amps = [-2e4, -1.9e4, -1.8e4, -1.7e4, -1.65e4, -1.6e4, -1.5e4]
+# current_amps = [-1.4e4, -1.3e4, -1.2e4, -1.1e4, -1e4]
+
 
 measure_coords = np.array(
-    [[0, 0, 0], [-393, 80, 1101], [123, 90, 443], [127, 126, 866]])
+    [[0, 0, 0], [-382, 85, 1100], [126, 89, 444], [669, 61, -345]])
 
 
 elec_pos = set_electrode_pos(measure_coords, x_shift, z_shift)
@@ -41,6 +55,7 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
     monophasic_pulse_params['pulse_amp'] = I
     monophasic_pulse_params['positions'] = pos
     cellsim_Hallermann_params['z_rot'] = z
+    # monophasic_pulse_params['stop_time'] = 2.2
 
     extPotSim = ExternalPotentialSim(
         cellsim_Hallermann_params, monophasic_pulse_params)
@@ -50,14 +65,15 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
         extPotSim.run_ext_sim(cell_models_folder, measure_coords)
 
     if plot_sim:
-        cell_vmem = np.load(join(extPotSim.save_folder,
-                                 f'Hallermann_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_vmem.npy'))
-        cell_tvec = np.load(join(extPotSim.save_folder,
-                                 f'Hallermann_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_tvec.npy'))
+        extPotSim.return_sim_name()
+        cell_vmem = np.load(
+            join(extPotSim.save_folder, extPotSim.sim_name + '_vmem.npy'))
+        cell_tvec = np.load(
+            join(extPotSim.save_folder, extPotSim.sim_name + '_tvec.npy'))
         plotSim = PlotSimulations(
             cellsim_Hallermann_params, monophasic_pulse_params, cell_vmem, cell_tvec)
         cell = plotSim.return_cell(cell_models_folder)
-        plotSim.plot_cellsim(cell, measure_coords, z, [0.05, 0.05, 0.3, 0.90])
+        plotSim.plot_cellsim(measure_coords, [0.05, 0.05, 0.3, 0.90])
 
 
 start = time.time()

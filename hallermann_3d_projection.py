@@ -14,23 +14,26 @@ import time
 from mpi4py import MPI
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_model'
 
-elec_positions = np.array([[-50, 0, 0],
-                           [60, 126, 659],
-                           [-301, 39, 879]])
+x_shift = -30
+z_shift = 40
+
+measure_coords = np.array(
+    [[0, 0, 0], [-382, 85, 1100], [126, 89, 444], [127, 110, 859]])
+
+elec_pos = set_electrode_pos(measure_coords, x_shift, z_shift)
 
 
-# monophasic_pulse_params['positions'] = [-127, -126, 866]
-# monophasic_pulse_params['positions'] = [-127, -126, 866]
+for pos in elec_pos:
 
+    monophasic_pulse_params['positions'] = pos
 
-measure_coordinates = np.array(
-    [[0, 0, 0], [-127, -126, 866], [-393, 39, 1101]])
+    plotSim = PlotSimulations(
+        cellsim_Hallermann_params, monophasic_pulse_params)
 
-plotSim = PlotSimulations(cellsim_Hallermann_params, monophasic_pulse_params)
+    cell = plotSim.return_cell(cell_models_folder)
 
-cell = plotSim.return_cell(cell_models_folder)
+    plotSim.create_measure_points(cell, measure_coords)
 
-plotSim.create_measure_points(cell, measure_coordinates)
-
-plotSim.morphology_3D(cell)
+    plotSim.morphology_3D(cell)
