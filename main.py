@@ -34,11 +34,13 @@ class ExternalPotentialSim:
         self.y_shift = cell_params['y_shift']
         self.y_rot = cell_params['y_rot']
         self.z_rot = cell_params['z_rot']  # Rotation around z-axis
+        self.start_time = elec_params['start_time']
+        self.stop_time = elec_params['stop_time']
 
     def return_sim_name(self):
-        sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_{self.amp}mA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}'
+        self.sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}_t={self.stop_time}_Amp={self.amp}mA'
 
-        return sim_name
+        return self.sim_name
 
     def return_cell(self, cell_models_folder):
 
@@ -103,6 +105,16 @@ class ExternalPotentialSim:
             cell.set_rotation(x=4.729, y=-3.05, z=self.z_rot)
             return cell
 
+    def find_terminals(self, cell, measure_pnt):
+
+        idx = cell.get_closest_idx(measure_pnt)
+        name = cell.get_idx_name(idx=idx)
+        print(name)
+        # term_idx = cell.get_idx_children(parent=)
+        #
+        # if h.SectionRef(sec=sec).nchild() == 0:
+        #     pass
+
     def create_measure_points(self, cell, com_coords):
         """
         Setting measurement of membrane potential in compartments closest to
@@ -119,8 +131,12 @@ class ExternalPotentialSim:
         else:
 
             for i in range(com_coords.shape[0]):
+
                 x, y, z = com_coords[i, :]
-                measure_pnts.append(cell.get_closest_idx(x, y, z))
+                measure_pnt = cell.get_closest_idx(x, y, z)
+
+                self.find_terminals(cell, measure_pnt)
+                measure_pnts.append(measure_pnt)
 
         self.measure_pnts = np.array(measure_pnts)
 
@@ -131,6 +147,7 @@ class ExternalPotentialSim:
             print(self.measure_pnts)
 
             for mc in self.measure_pnts:
+                print('name', cell.get_idx_name(mc))
                 print('measure_coord', cell.x[mc].mean(),
                       cell.y[mc].mean(), cell.z[mc].mean())
 
@@ -145,13 +162,11 @@ class ExternalPotentialSim:
 
         Seperate parameter definitions from function?
         """
-        self.elec_pos = self.elec_params['positions']
-        self.amp = self.elec_params['pulse_amp']  # External current amplitide
         # Electrode position
+        # self.elec_pos = self.elec_params['positions']
         self.x0, self.y0, self.z0 = self.elec_params['positions']
+
         sigma = self.elec_params['sigma']
-        self.start_time = self.elec_params['start_time']
-        self.stop_time = self.elec_params['stop_time']
 
         # Calculating external field function
         self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
@@ -189,7 +204,17 @@ class ExternalPotentialSim:
         # find_diff = np.diff(cell.vmem)
         return v_ss
 
-    def find_max_mem_pot(self, cell_vmem):
+    # def find_max_mem_pot(self, cell_vmem, measure_pnts_idx):
+    #
+    #
+    #     for mp in self.measure_pnts:
+    #
+    #
+    #         v_max = np.max(cell_vmem[mp])
+    #
+    #     return v_max
+
+    def max_mem_pot_dict(self, cell_vmem):
 
         v_max = {}
 
@@ -247,14 +272,18 @@ class ExternalPotentialSim:
     def run_ext_sim(self, cell_models_folder, comp_coords, passive=False):
 
         cell = self.return_cell(cell_models_folder)
+        # print(cell.allsecnames)
         self.create_measure_points(cell, comp_coords)
+        self.print_measure_points(cell)
         self.return_segment_coords(cell)
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
+        v_max = self.max_mem_pot_dict(cell.vmem)
         self.export_data(cell)
 
         cell.__del__()
+        return v_max
 
     def run_current_sim(self, cell_models_folder, comp_coords, passive=False):
         cell = self.return_cell(cell_models_folder)
