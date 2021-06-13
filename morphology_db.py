@@ -52,7 +52,18 @@ To make sure cell variants are grouped correctly run:
 batch.
 """
 start_time = time.time()
+
+# Create a save folder for data if one does not exist
+save_folder = 'data/morphology_search/'
+if not os.path.isdir(save_folder):
+    os.makedirs(save_folder)
+
+"""
+Extract cell models from Blue Brain directory and sort all cells of the same
+type into chunks.
+"""
 if RANK == 0:
+
     zip_dir = 'hoc_combos_syn.1_0_10.allzips'
     target_dir = 'hoc_combos_syn.1_0_10.unzipped'
 
@@ -74,17 +85,16 @@ if RANK == 0:
 else:
     neuron_chunks = None
 
-# Create a save folder if one does not exist
-# save_folder = 'data/morphology_search'
-save_folder = 'test'
-if not os.path.isdir(save_folder):
-    os.makedirs(save_folder)
-
 # Scatter each chunk of neurons between processes
 neuron_chunks = COMM.scatter(neuron_chunks, root=0)
 
+"""
 
-cell_depths = -np.linspace(0, 165, 5)  # Equally spaced cell depths
+"""
+
+show_morph = False
+
+cell_depths = np.linspace(1382, 2082, 1)  # Equally spaced cell depths
 
 terminal_depths = []  # List of axon terminal depths corresonding to indices
 
@@ -97,13 +107,15 @@ for nrn in neuron_chunks:
 
     for morphologyfile in glob(join(morphology_path, '*')):
 
+        morph_name = nrn[31:]  # Name of the morphology
+        cell = LFPy.Cell(morphology=morphologyfile)
+        cell.set_rotation(x=np.pi / 2, y=-0.1)
         for z in cell_depths:
             neuron_variants_counter += 1
 
             # Loading cell morphology and setting depth and rotation
-            cell = LFPy.Cell(morphology=morphologyfile)
+
             cell.set_pos(z=z)
-            cell.set_rotation(x=np.pi / 2, y=-0.1)
 
             possible_axon_names = ["my", "axon", "ax", "myelin",
                                    "node", "hilloc", "hill"]
@@ -112,10 +124,12 @@ for nrn in neuron_chunks:
 
                 # print(secname)
                 # if h.SectionRef(sec=section).nchild() == 0:
-                extreme_idx = cell.get_idx(section=secname)[-1]
-                # Change to get only extremeties
 
-                if cell.z[extreme_idx][-1] < 0:
+                # Find index of terminal compartment on the current section
+                extreme_idx = cell.get_idx(section=secname)[-1]
+
+                # Skip neurons of depths where a neurite falls outside cortex
+                if cell.z[extreme_idx][-1] < 0 or cell.z[extreme_idx][-1] > 2782:
                     continue
 
                 # Find out if section is part of the axon
@@ -137,18 +151,17 @@ for nrn in neuron_chunks:
                     # print('secname: ', secname, 'terminal_idx: ', terminal_idx,
                     #       'z_pos: ', cell.z[terminal_idx].mean(axis=0))
 
-            cell.set_rotation(x=np.pi / 2, y=-0.1)
-            morph_name = nrn[31:]  # Name of the morphology
-
-            # Morphology of each cell variant
+        # Plotting morphology of each cell variant
+        if show_morph:
             fig = plt.figure()
             ax1 = fig.add_subplot(121)
             ax1.plot(cell.x.T, cell.z.T, c='k')
             ax1.plot(cell.x[axon_terminals].mean(axis=1),
                      cell.z[axon_terminals].mean(axis=1), 'y*')
-            ax1.set_ylim(1382, 857)
+        # ax1.set_ylim(2082, 1382)
 
-    plt.savefig(join(f"test/find_axon_test_{morph_name}_depth{z}.png"))
+            plt.savefig(
+                join(save_folder, f"{morph_name}_morphology_depth{z}.png"))
 
 
 hist_name = nrn[31:-2]  # Name of neuron type
