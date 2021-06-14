@@ -70,17 +70,20 @@ if RANK == 0:
     if not os.path.isdir(target_dir):
         unzip_directory(zip_dir, target_dir)
 
-    neuron_names = ['BP', 'BTC', 'DBC', 'MC']
+    neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
+    # neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']
     nneurons = []
     for name in neuron_names:
         n = sorted(
             glob(join('hoc_combos_syn.1_0_10.unzipped', 'L5_' + name + '*')))
         nneurons.append(n)
     # Splitting list of neurons into chunks equal to number of processes
-    # print(nneurons)
+
     neurons = [j for sub in nneurons for j in sub]
-    # print(neurons)
-    neuron_chunks = list(chunks(neurons, SIZE))
+
+    size = int(len(neurons) / 5)
+    neuron_chunks = list(chunks(neurons, size))
+
 
 else:
     neuron_chunks = None
@@ -93,8 +96,9 @@ neuron_chunks = COMM.scatter(neuron_chunks, root=0)
 """
 
 show_morph = False
+show_cell_hist = False
 
-cell_depths = np.linspace(1382, 2082, 1)  # Equally spaced cell depths
+cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths
 
 terminal_depths = []  # List of axon terminal depths corresonding to indices
 
@@ -129,7 +133,7 @@ for nrn in neuron_chunks:
                 extreme_idx = cell.get_idx(section=secname)[-1]
 
                 # Skip neurons of depths where a neurite falls outside cortex
-                if cell.z[extreme_idx][-1] < 0 or cell.z[extreme_idx][-1] > 2782:
+                if cell.z[extreme_idx][-1] < 0 or cell.z[extreme_idx][-1] > 2082:
                     continue
 
                 # Find out if section is part of the axon
@@ -173,21 +177,29 @@ terminal_depths = np.array(terminal_depths)
 const_weights = (1. / len(neuron_chunks)) * np.ones(len(terminal_depths))
 
 # Histogram
-plt.figure()
-plt.hist(terminal_depths, bins=100,
-         weights=const_weights, orientation='horizontal')
-ax = plt.gca()
-ax.invert_yaxis()
-plt.xlabel('# of terminals')
-plt.ylabel('Layer depth [$\mu m$]')
-plt.savefig(
-    join(save_folder, f"layer_terminal_dist_histogram_{hist_name}.png"))
+if show_cell_hist:
+    plt.figure()
+    plt.hist(terminal_depths, bins=100,
+             weights=const_weights, orientation='horizontal')
+    ax = plt.gca()
+    ax.invert_yaxis()
+    plt.xlabel('# of terminals')
+    plt.ylabel('Layer depth [$\mu m$]')
+    plt.savefig(
+        join(save_folder, f"layer_terminal_dist_histogram_{hist_name}.png"))
 
 # Sending length of all terminal_depths arrays to root
 sendcounts = np.array(COMM.gather(len(terminal_depths), root=0))
 
 if RANK == 0:
     terminal_depths_layer = np.empty(sum(sendcounts), dtype='float64')
+
+else:
+    terminal_depths_layer = None
+
+COMM.Gatherv(terminal_depths, (terminal_depths_layer, sendcounts), root=0)
+
+if RANK == 0:
     print(f'# of terminals in {nrn[31:2]}', len(terminal_depths_layer))
     plt.figure()
     plt.hist(terminal_depths, bins=100,
@@ -198,13 +210,6 @@ if RANK == 0:
     plt.ylabel('Layer depth [$\mu m$]')
     plt.savefig(
         join(save_folder, f"layer_terminal_dist_histogram_{nrn[31:2]}.png"))
-else:
-    terminal_depths_layer = None
-
-COMM.Gatherv(terminal_depths, (terminal_depths_layer, sendcounts), root=0)
 
 end_time = time.time()
 print(f'RANK: {RANK}. Time to execute: {end_time - start_time} seconds')
-
-
-# for terminal in morph_terminals
