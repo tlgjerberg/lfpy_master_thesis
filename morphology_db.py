@@ -70,8 +70,8 @@ if RANK == 0:
     if not os.path.isdir(target_dir):
         unzip_directory(zip_dir, target_dir)
 
-    neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
-    # neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']
+    # neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
+    neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']  # 1, 1, 1, 1
     nneurons = []
     for name in neuron_names:
         n = sorted(
@@ -96,7 +96,7 @@ neuron_chunks = COMM.scatter(neuron_chunks, root=0)
 """
 
 show_morph = False
-show_cell_hist = False
+show_cell_hist = True
 
 cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths
 
@@ -179,7 +179,7 @@ const_weights = (1. / len(neuron_chunks)) * np.ones(len(terminal_depths))
 # Histogram
 if show_cell_hist:
     plt.figure()
-    plt.hist(terminal_depths, bins=100,
+    plt.hist(terminal_depths, bins=1000,
              weights=const_weights, orientation='horizontal')
     ax = plt.gca()
     ax.invert_yaxis()
@@ -200,16 +200,17 @@ else:
 COMM.Gatherv(terminal_depths, (terminal_depths_layer, sendcounts), root=0)
 
 if RANK == 0:
-    print(f'# of terminals in {nrn[31:2]}', len(terminal_depths_layer))
+    print(f'# of terminals in {nrn[31:-2]}', len(terminal_depths_layer))
     plt.figure()
-    plt.hist(terminal_depths, bins=100,
-             weights=const_weights, orientation='horizontal')
+    # plt.hist(terminal_depths, bins=100,
+    #          weights=const_weights, orientation='horizontal')
+    plt.hist(terminal_depths, bins=1000, orientation='horizontal')
     ax = plt.gca()
     ax.invert_yaxis()
     plt.xlabel('# of terminals')
     plt.ylabel('Layer depth [$\mu m$]')
     plt.savefig(
-        join(save_folder, f"layer_terminal_dist_histogram_{nrn[31:2]}.png"))
+        join(save_folder, f"layer_terminal_dist_histogram_{nrn[31:-2]}.png"))
 
 end_time = time.time()
 print(f'RANK: {RANK}. Time to execute: {end_time - start_time} seconds')

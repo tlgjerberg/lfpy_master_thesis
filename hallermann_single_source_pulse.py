@@ -30,7 +30,6 @@ z_shift = 0
 
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-# cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim'
 cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
 
 
