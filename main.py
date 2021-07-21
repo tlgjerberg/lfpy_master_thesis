@@ -109,7 +109,7 @@ class ExternalPotentialSim:
 
         idx = cell.get_closest_idx(measure_pnt)
         name = cell.get_idx_name(idx=idx)
-        print(name)
+        # print(name)
         # term_idx = cell.get_idx_children(parent=)
         #
         # if h.SectionRef(sec=sec).nchild() == 0:
@@ -269,12 +269,11 @@ class ExternalPotentialSim:
             np.save(join(self.save_folder,
                          f'{file_name}_imem'), cell.imem)
 
-    def run_ext_sim(self, cell_models_folder, comp_coords, passive=False):
+    def run_ext_sim(self, cell, cell_models_folder, comp_coords, passive=False):
 
-        cell = self.return_cell(cell_models_folder)
         # print(cell.allsecnames)
         self.create_measure_points(cell, comp_coords)
-        self.print_measure_points(cell)
+        # self.print_measure_points(cell)
         self.return_segment_coords(cell)
 
         self.extracellular_stimuli(cell)
