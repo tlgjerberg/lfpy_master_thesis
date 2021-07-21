@@ -70,8 +70,8 @@ if RANK == 0:
     if not os.path.isdir(target_dir):
         unzip_directory(zip_dir, target_dir)
 
-    # neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
-    neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']  # 1, 1, 1, 1
+    neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
+    # neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']  # 1, 1, 1, 1
     nneurons = []
     for name in neuron_names:
         n = sorted(
@@ -95,7 +95,7 @@ neuron_chunks = COMM.scatter(neuron_chunks, root=0)
 
 """
 
-show_morph = False
+show_morph = True
 show_cell_hist = True
 
 cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths
@@ -113,7 +113,7 @@ for nrn in neuron_chunks:
 
         morph_name = nrn[31:]  # Name of the morphology
         cell = LFPy.Cell(morphology=morphologyfile)
-        cell.set_rotation(x=np.pi / 2, y=-0.1)
+        cell.set_rotation(x=(3.0 / 2) * np.pi, y=-0.1)
         for z in cell_depths:
             neuron_variants_counter += 1
 
@@ -158,11 +158,12 @@ for nrn in neuron_chunks:
         # Plotting morphology of each cell variant
         if show_morph:
             fig = plt.figure()
-            ax1 = fig.add_subplot(121)
+            ax1 = fig.add_subplot(111)
+            ax1.invert_yaxis()
             ax1.plot(cell.x.T, cell.z.T, c='k')
             ax1.plot(cell.x[axon_terminals].mean(axis=1),
                      cell.z[axon_terminals].mean(axis=1), 'y*')
-        # ax1.set_ylim(2082, 1382)
+            # ax1.set_ylim(cell.z.T[-1], cell.z.T[0])
 
             plt.savefig(
                 join(save_folder, f"{morph_name}_morphology_depth{z}.png"))

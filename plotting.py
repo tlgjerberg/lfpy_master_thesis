@@ -183,7 +183,7 @@ class PlotSimulations(ExternalPotentialSim):
         # Add colorbar corresonding to field strength in mV
         fig.colorbar(self.ext_field_im, pad=0.05, ax=self.ax_m, cax=cax)
 
-    def plot_membrane_potential(self, fig, placement):
+    def plot_membrane_potential(self, fig, placement=[0.17, 0.11, .7, .8], save=False):
 
         ax_vm = fig.add_axes(placement,  # ylim=[-120, 50],
                              xlim=[0, self.tstop], xlabel="Time (ms)")
@@ -192,14 +192,19 @@ class PlotSimulations(ExternalPotentialSim):
 
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
         [ax_vm.plot(self.tvec, self.vmem[idx],
-                    c=self.cell_plot_colors[idx], lw=0.5) for idx in self.cell_plot_idxs]
+                    c=self.cell_plot_colors[idx], lw=2) for idx in self.cell_plot_idxs]
+        if save:
+            plt.legend([f'Compartment {self.measure_pnts[0]}',
+                        f'Compartment {self.measure_pnts[1]}', f'Compartment {self.measure_pnts[2]}'])
+            plt.savefig(
+                join(self.save_folder, 'mem_pot_' + self.sim_name + '.png'), dpi=300)
 
     def plot_current_pulse(self, fig, placement):
 
         ax_stim = fig.add_axes(placement, xlim=[0, self.tstop],
                                ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
 
-        ax_stim.plot(self.tvec, self.pulse / 1000, lw=0.5)
+        ax_stim.plot(self.tvec, self.pulse / 1000, lw=2)
 
     def plot_cellsim(self, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
         """
@@ -271,7 +276,7 @@ class PlotSimulations(ExternalPotentialSim):
         self.extracellular_stimuli(cell)
 
         # Simulating cell after all parameters and field has been added
-        fig = plt.figure(figsize=[10, 8])
+        fig = plt.figure(figsize=[6, 10])
 
         # Defining figure frame and parameters for combined figure
         fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
@@ -304,7 +309,7 @@ class PlotSimulations(ExternalPotentialSim):
 
         self.plot_membrane_potential(fig_mem, mem_axes_placement)
         fig.savefig(join(
-            self.save_folder, f'mem_pot_' + self.sim_name + '.png'))
+            self.save_folder, f'elec_angle' + self.sim_name + '.png'))
         # plt.show()
         plt.close(fig=fig)
         plt.close(fig=fig_mem)
@@ -323,11 +328,8 @@ class PlotSimulations(ExternalPotentialSim):
             join(self.save_folder, 'potential_electrode_distance.png'), dpi=300)
         # plt.show()
 
-    def plot_dV(self, elec_positions, dV):
+    def plot_dV(self, elec_dists, dV):
 
-        elec_positions = elec_positions[elec_positions != 0]
-        elec_dists = elec_positions.ravel()
-        elec_dists *= -1
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
         ax.set_ylabel('dV (mV)')
@@ -338,6 +340,13 @@ class PlotSimulations(ExternalPotentialSim):
 
         fig.savefig(
             join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
+        plt.close(fig=fig)
+        # dV_log = np.log(dV)
+        # fig, ax = plt.subplots()
+        # ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
+        # ax.set_ylabel('dV (mV)')
+        # ax.plot(elec_dists, dV_log, 'o-')
+        # plt.show()
 
     def plot_currents(self, cell, msre_coords, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200]):
 

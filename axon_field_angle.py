@@ -16,9 +16,6 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-"""
-chiral_morphology
-"""
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 cellsim_bisc_stick_params['save_folder_name'] = 'data/axon_bisc_field_angle'
@@ -30,15 +27,18 @@ def run_axon_angle(cell_models_folder, measure_coords, I, pos, run_sim=False, pl
     monophasic_pulse_params['positions'] = pos
     cellsim_bisc_stick_params['cell_dist_to_top'] = -500
     cellsim_bisc_stick_params['tstop'] = 20
-    print('RANK', RANK, 'electrode position', pos)
 
     extPotSim = ExternalPotentialSim(
         cellsim_bisc_stick_params, monophasic_pulse_params)
+    extPotSim.return_sim_name()
 
     if run_sim:
         elec_positions = set_electrode_pos(measure_coords)
+        cell = extPotSim.return_cell(cell_models_folder)
+        v_max = extPotSim.run_ext_sim(cell, cell_models_folder, measure_coords)
 
-        v_max = extPotSim.run_ext_sim(cell_models_folder, measure_coords)
+        print(pos)
+        print(v_max)
 
     else:
         print('No simulation run!')
@@ -55,55 +55,38 @@ def run_axon_angle(cell_models_folder, measure_coords, I, pos, run_sim=False, pl
         cell = plotSim.return_cell(cell_models_folder)
         plotSim.plot_cellsim_angle(
             measure_coords, [0, 0, 1, 1], field=True)
+        fig = plt.figure()
+        plotSim.plot_membrane_potential(fig, save=True)
     else:
         print('No plots generated!')
 
-    return v_max
+    # return v_max
 
 
 measure_coords = np.array([[0, 0, -10], [0, 0, -500], [0, 0, 500]])
 
-# elec_positions = np.array([[600, 0, -555],
-#                            [600 * np.cos(np.pi / 4), 0, -555 +
-#                             600 * np.sin(np.pi / 4)],
-#                            [600 * np.cos(np.pi / 3), 0, -555 +
-#                             600 * np.sin(np.pi / 3)],
-#                            [600 * np.cos(np.pi / 6), 0, -555 +
-#                             600 * np.sin(np.pi / 6)],
-#                            [600 * np.cos(np.pi / 2), 0, -555 +
-#                             600 * np.sin(np.pi / 2)],
-#                            [0, 0, 600]], dtype=float)
-# elec_positions = np.array([[1000, 0, -555],
-#                            [1000 * np.cos(np.pi / 4), 0, -555 +
-#                             1000 * np.sin(np.pi / 4)],
-#                            [1000 * np.cos(np.pi / 3), 0, -555 +
-#                             1000 * np.sin(np.pi / 3)],
-#                            [1000 * np.cos(np.pi / 6), 0, -555 +
-#                             1000 * np.sin(np.pi / 6)],
-#                            [1000 * np.cos(np.pi / 2), 0, -555 +
-#                             1000 * np.sin(np.pi / 2)],
-#                            [0, 0, 600]], dtype=float)
-elec_positions = np.array([[2000, 0, -10],
-                           [2000 * np.cos(np.pi / 4), 0, -10 +
-                            2000 * np.sin(np.pi / 4)],
-                           [2000 * np.cos(np.pi / 3), 0, -10 +
-                            2000 * np.sin(np.pi / 3)],
-                           [2000 * np.cos(np.pi / 6), 0, -10 +
-                            2000 * np.sin(np.pi / 6)],
-                           [2000 * np.cos(np.pi / 2), 0, -10 +
-                            2000 * np.sin(np.pi / 2)],
-                           [2000 * np.cos(3 * np.pi / 2), 0, -10 +
-                            2000 * np.sin(3 * np.pi / 2)],
-                           [2000 * np.cos(7 * np.pi / 4), 0, -10 +
-                            2000 * np.sin(7 * np.pi / 4)]], dtype=float)
 
-measure_keys = ['0', '25', '48']
-value = []
+elec_positions = np.array([[2010, 0, -5],
+                           [2010 * np.cos(np.pi / 4), 0, -5 +
+                            2010 * np.sin(np.pi / 4)],
+                           [2010 * np.cos(np.pi / 3), 0, -5 +
+                            2010 * np.sin(np.pi / 3)],
+                           [2010 * np.cos(np.pi / 6), 0, -5 +
+                            2010 * np.sin(np.pi / 6)],
+                           [2010 * np.cos(np.pi / 2), 0, -5 +
+                            2010 * np.sin(np.pi / 2)],
+                           [2010 * np.cos(3 * np.pi / 2), 0, -5 +
+                            2010 * np.sin(3 * np.pi / 2)],
+                           [2010 * np.cos(7 * np.pi / 4), 0, -5 +
+                            2010 * np.sin(7 * np.pi / 4)]], dtype=float)
+
+# measure_keys = ['0', '25', '48']
+# value = []
 
 # v_max_sorted = {key: list(value) for key in measure_keys}
 # print(v_max_sorted)
-# v_max = None
-I = -1e4  # uA
+v_max = None
+I = -5e4  # uA
 
 task_idx = -1
 for pos in elec_positions:
@@ -113,7 +96,7 @@ for pos in elec_positions:
         continue
 
     v_max = run_axon_angle(
-        cell_models_folder, measure_coords, I, pos, True, True)
+        cell_models_folder, measure_coords, I, pos, True, False)
 
     print("RANK %d doing task %d" % (RANK, task_idx))
 
@@ -127,7 +110,7 @@ for pos in elec_positions:
 # #
 # if RANK == 0:
 #     print(v_max_top)
-# #     v_max_top_cons = sorted(list(flatten(v_max_top)), reverse=True)
+#     v_max_top_cons = sorted(list(flatten(v_max_top)), reverse=True)
 #     v_max_mid_cons = sorted(list(flatten(v_max_mid)), reverse=True)
 #     v_max_bot_cons = sorted(list(flatten(v_max_bot)), reverse=True)
 #     v_max_list = [v_max_top_cons, v_max_mid_cons, v_max_bot_cons]
