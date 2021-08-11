@@ -95,6 +95,7 @@ axon_v_max = COMM.gather(v_max_sorted['axon'], root=0)
 
 
 if RANK == 0:
+    # Sorting and flattening maximum potential into list for each recorded compartment
     soma_v_max_cons = sorted(list(flatten(soma_v_max)), reverse=True)
     apic_v_max_cons = sorted(list(flatten(apic_v_max)), reverse=True)
     axon_terminal_v_max_cons = sorted(
@@ -106,6 +107,7 @@ if RANK == 0:
                   axon_terminal_v_max_cons, axon_terminal2_v_max_cons]
     current_amps_sorted = sorted(current_amps)
 
+    # Plotting the cell morphology along with recorded compartments
     plotSim = PlotSimulations(
         cellsim_Hallermann_params, monophasic_pulse_params)
     cell = plotSim.return_cell(cell_models_folder)

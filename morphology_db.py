@@ -21,6 +21,26 @@ with open('layer_download.json') as layer_download:
     layer_data = json.load(layer_download)
 
 
+def neuron_sets(zip_dir, target_dir, neuron_names):
+
+    if not os.path.isdir(target_dir):
+        unzip_directory(zip_dir, target_dir)
+
+    nneurons = []
+    for name in neuron_names:
+        n = sorted(
+            glob(join('hoc_combos_syn.1_0_10.unzipped', 'L5_' + name + '*')))
+        nneurons.append(n)
+    # Splitting list of neurons into chunks equal to number of processes
+
+    neurons = [j for sub in nneurons for j in sub]
+
+    size = int(len(neurons) / 5)
+    neuron_chunks = list(chunks(neurons, size))
+
+    return neuron_chunks
+
+
 def chunks(l, n):
     """Yield n number of sequential chunks from l."""
     d, r = divmod(len(l), n)
@@ -67,23 +87,9 @@ if RANK == 0:
     zip_dir = 'hoc_combos_syn.1_0_10.allzips'
     target_dir = 'hoc_combos_syn.1_0_10.unzipped'
 
-    if not os.path.isdir(target_dir):
-        unzip_directory(zip_dir, target_dir)
-
     neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
     # neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']  # 1, 1, 1, 1
-    nneurons = []
-    for name in neuron_names:
-        n = sorted(
-            glob(join('hoc_combos_syn.1_0_10.unzipped', 'L5_' + name + '*')))
-        nneurons.append(n)
-    # Splitting list of neurons into chunks equal to number of processes
-
-    neurons = [j for sub in nneurons for j in sub]
-
-    size = int(len(neurons) / 5)
-    neuron_chunks = list(chunks(neurons, size))
-
+    neuron_chunks = neuron_sets(zip_dir, target_dir, neuron_names)
 
 else:
     neuron_chunks = None
@@ -102,73 +108,80 @@ cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths
 
 terminal_depths = []  # List of axon terminal depths corresonding to indices
 
-neuron_variants_counter = 0
 
-for nrn in neuron_chunks:
-    morphology_path = join(nrn, 'morphology')
+def count_axon_terminals(neuron_chunks):
+    neuron_variants_counter = 0
 
-    axon_terminals = []  # List of cell indices corresonding to axon terminals
+    # Looping through each set/chunk of neurons and counting the axon terminals
+    for nrn in neuron_chunks:
+        morphology_path = join(nrn, 'morphology')
 
-    for morphologyfile in glob(join(morphology_path, '*')):
+        axon_terminals = []  # List of cell indices corresonding to axon terminals
 
-        morph_name = nrn[31:]  # Name of the morphology
-        cell = LFPy.Cell(morphology=morphologyfile)
-        cell.set_rotation(x=(3.0 / 2) * np.pi, y=-0.1)
-        for z in cell_depths:
-            neuron_variants_counter += 1
+        for morphologyfile in glob(join(morphology_path, '*')):
 
-            # Loading cell morphology and setting depth and rotation
+            morph_name = nrn[31:]  # Name of the morphology
 
-            cell.set_pos(z=z)
+            # Create cell object a given morphology and setting rotation
+            cell = LFPy.Cell(morphology=morphologyfile)
+            cell.set_rotation(x=(3.0 / 2) * np.pi, y=-0.1)
+            for z in cell_depths:
+                neuron_variants_counter += 1
 
-            possible_axon_names = ["my", "axon", "ax", "myelin",
-                                   "node", "hilloc", "hill"]
-            for sec in h.allsec():
-                secname = sec.name()
+                # Loading cell morphology and setting depth
+                cell.set_pos(z=z)
 
-                # print(secname)
-                # if h.SectionRef(sec=section).nchild() == 0:
+                possible_axon_names = ["my", "axon", "ax", "myelin",
+                                       "node", "hilloc", "hill"]
+                for sec in h.allsec():
+                    secname = sec.name()
 
-                # Find index of terminal compartment on the current section
-                extreme_idx = cell.get_idx(section=secname)[-1]
+                    # print(secname)
+                    # if h.SectionRef(sec=section).nchild() == 0:
 
-                # Skip neurons of depths where a neurite falls outside cortex
-                if cell.z[extreme_idx][-1] < 0 or cell.z[extreme_idx][-1] > 2082:
-                    continue
+                    # Find index of terminal compartment on the current section
+                    extreme_idx = cell.get_idx(section=secname)[-1]
 
-                # Find out if section is part of the axon
-                sec_is_axon = False
-                for ax_name in possible_axon_names:
-                    if ax_name in secname:
-                        sec_is_axon = True
+                    # Skip neurons of depths where a neurite falls outside cortex
+                    if cell.z[extreme_idx][-1] < 0 or cell.z[extreme_idx][-1] > 2082:
+                        continue
 
-                # We are only interested if sec is axon
-                if not sec_is_axon:
-                    continue
+                    # Test if section is part of an axon
+                    sec_is_axon = False
+                    for ax_name in possible_axon_names:
+                        if ax_name in secname:
+                            sec_is_axon = True
 
-                # If section has no children, then it has an end point
-                if h.SectionRef(sec=sec).nchild() == 0:
-                    terminal_idx = cell.get_idx(section=secname)[-1]
-                    axon_terminals.append(terminal_idx)
-                    terminal_depths.append(
-                        (cell.z[terminal_idx].mean(axis=0)))
-                    # print('secname: ', secname, 'terminal_idx: ', terminal_idx,
-                    #       'z_pos: ', cell.z[terminal_idx].mean(axis=0))
+                    # We are only interested if sec is axon
+                    if not sec_is_axon:
+                        continue
 
-        # Plotting morphology of each cell variant
-        if show_morph:
-            fig = plt.figure()
-            ax1 = fig.add_subplot(111)
-            ax1.invert_yaxis()
-            ax1.plot(cell.x.T, cell.z.T, c='k')
-            ax1.plot(cell.x[axon_terminals].mean(axis=1),
-                     cell.z[axon_terminals].mean(axis=1), 'y*')
-            # ax1.set_ylim(cell.z.T[-1], cell.z.T[0])
+                    # If section has no children, then it has an end point
+                    if h.SectionRef(sec=sec).nchild() == 0:
+                        terminal_idx = cell.get_idx(section=secname)[-1]
+                        axon_terminals.append(terminal_idx)
+                        terminal_depths.append(
+                            (cell.z[terminal_idx].mean(axis=0)))
+                        # print('secname: ', secname, 'terminal_idx: ', terminal_idx,
+                        #       'z_pos: ', cell.z[terminal_idx].mean(axis=0))
 
-            plt.savefig(
-                join(save_folder, f"{morph_name}_morphology_depth{z}.png"))
+            # Plotting morphology of each cell variant
+            if show_morph:
+                fig = plt.figure()
+                ax1 = fig.add_subplot(111)
+                ax1.invert_yaxis()
+                ax1.plot(cell.x.T, cell.z.T, c='k')
+                ax1.plot(cell.x[axon_terminals].mean(axis=1),
+                         cell.z[axon_terminals].mean(axis=1), 'y*')
+                # ax1.set_ylim(cell.z.T[-1], cell.z.T[0])
+
+                plt.savefig(
+                    join(save_folder, f"{morph_name}_morphology_depth{z}.png"))
+
+            return axon_terminals, terminal_depths
 
 
+axon_terminals, terminal_depths = count_axon_terminals(neuron_chunks)
 hist_name = nrn[31:-2]  # Name of neuron type
 # Changing terminal depths to shift z-axis to be positive downwards
 terminal_depths = np.array(terminal_depths)
@@ -177,7 +190,7 @@ terminal_depths = np.array(terminal_depths)
 # Weights to scale each bin by number of cell variants
 const_weights = (1. / len(neuron_chunks)) * np.ones(len(terminal_depths))
 
-# Histogram
+# Creating a histogram of axon terminal depths for each neuron type
 if show_cell_hist:
     plt.figure()
     plt.hist(terminal_depths, bins=1000,
