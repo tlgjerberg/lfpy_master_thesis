@@ -29,6 +29,9 @@ class PlotSimulations(ExternalPotentialSim):
         self.tvec = cell_tvec
 
     def plot_morphology(self, cell, fig, morph_ax_params=[0.1, 0.1, 0.9, 0.9]):
+        """Plots the morphology of a cell model with separate colors for each
+        type of neuron section and points marking compartments of interest
+        according to the measurement points."""
 
         # Adding axes with appropriate parameters
         self.ax_m = fig.add_axes(morph_ax_params, aspect=1, frameon=False,
@@ -80,6 +83,7 @@ class PlotSimulations(ExternalPotentialSim):
         # plt.show()
 
     def morphology_3D(self, cell):
+        """Plots a cell morphology in a 3D representation."""
 
         # List of measurement points
         self.cell_plot_idxs = self.measure_pnts.astype(dtype='int')
@@ -142,12 +146,16 @@ class PlotSimulations(ExternalPotentialSim):
             join(self.save_folder, f'{self.cell_name}_{self.amp}mA_elec_pos={self.elec_pos}.png'))
 
     def draw_electrode(self):
+        """Adds a point representing an electrode."""
+
         ellipse_pos = [self.elec_params["positions"]
                        [0], self.elec_params["positions"][2]]
         self.ax_m.add_artist(Ellipse(ellipse_pos, width=10 * self.elec_params["electrode_radii"],
                                      height=10 * self.elec_params["electrode_radii"], fc='gray', ec='black'))
 
     def plot_external_field(self, cell, fig, cb=False):
+        """Plots a representation of the extracellular field around an
+        electrode."""
 
         # Adding external field visualization to cell morphology figure
         field_x_dim = abs(self.xlim[0]) + abs(self.xlim[1])
@@ -176,6 +184,7 @@ class PlotSimulations(ExternalPotentialSim):
             self.add_colorbar(fig)
 
     def add_colorbar(self, fig):
+        """Adds a colorbar to the extracellular field plot."""
 
         # Divide axes of field and colorbar
         divider = make_axes_locatable(self.ax_m)
@@ -184,6 +193,8 @@ class PlotSimulations(ExternalPotentialSim):
         fig.colorbar(self.ext_field_im, pad=0.05, ax=self.ax_m, cax=cax)
 
     def plot_membrane_potential(self, fig, placement=[0.17, 0.11, .7, .8], save=False):
+        """Plots the change in membrane potential over time corresponding to
+        each compartment marked as a measurement point."""
 
         ax_vm = fig.add_axes(placement,  # ylim=[-120, 50],
                              xlim=[0, self.tstop], xlabel="Time (ms)")
@@ -200,6 +211,8 @@ class PlotSimulations(ExternalPotentialSim):
                 join(self.save_folder, 'mem_pot_' + self.sim_name + '.png'), dpi=300)
 
     def plot_current_pulse(self, fig, placement):
+        """Plots the current pulse used to set up the stimulating electrical
+        field."""
 
         ax_stim = fig.add_axes(placement, xlim=[0, self.tstop],
                                ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
@@ -249,6 +262,7 @@ class PlotSimulations(ExternalPotentialSim):
         stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
         mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
 
+        # Adding mambrane potential, current pulse and electrode to combined figure
         self.plot_membrane_potential(fig, mem_axes_placement)
         self.plot_current_pulse(fig, stim_axes_placement)
         self.draw_electrode()
@@ -299,6 +313,7 @@ class PlotSimulations(ExternalPotentialSim):
         self.return_sim_name()
         fig.savefig(join(
             self.save_folder, f'point_source_' + self.sim_name + '.png'))
+
         # Setting size and location of plotted potentials and current
         fig_mem = plt.figure(figsize=[10, 4])
         ax_bot = 0.15
@@ -315,6 +330,7 @@ class PlotSimulations(ExternalPotentialSim):
         plt.close(fig=fig_mem)
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
+        """Plots steady state potentials compared to distance from """
 
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
@@ -329,24 +345,20 @@ class PlotSimulations(ExternalPotentialSim):
         # plt.show()
 
     def plot_dV(self, elec_dists, dV):
+    """Plots the change in potential dV against the electrode distance from
+    a recorded compartment."""
 
-        fig, ax = plt.subplots()
-        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
-        ax.set_ylabel('dV (mV)')
-        ax.loglog(elec_dists, dV, '-o')
+    fig, ax = plt.subplots()
+    ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
+     ax.set_ylabel('dV (mV)')
+      ax.loglog(elec_dists, dV, '-o')
 
-        if not os.path.isdir(self.save_folder):
+       if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
         fig.savefig(
             join(self.save_folder, 'dV_electrode_distance.png'), dpi=300)
         plt.close(fig=fig)
-        # dV_log = np.log(dV)
-        # fig, ax = plt.subplots()
-        # ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
-        # ax.set_ylabel('dV (mV)')
-        # ax.plot(elec_dists, dV_log, 'o-')
-        # plt.show()
 
     def plot_currents(self, cell, msre_coords, morph_ax_params, xlim=[-500, 500], ylim=[-300, 1200]):
 
@@ -426,6 +438,9 @@ class PlotSimulations(ExternalPotentialSim):
         plt.close(fig=fig)
 
     def plot_double_morphology(self, cell_models_folder, z_rot, msre_coords, xlim=[-760, 760], ylim=[-500, 1200]):
+        """Plots two mrophologies next to each other with an electrode
+        representation placed at the same point between them at both morphology
+        plots."""
 
         self.xlim = xlim
         self.ylim = ylim
@@ -451,9 +466,7 @@ class PlotSimulations(ExternalPotentialSim):
 
         self.z_rot = z_rot[1]
         cell2 = self.return_cell(cell_models_folder)
-        # self.cell_plot_idxs = self.measure_pnts.astype(dtype='int')
-        # self.cell_plot_colors = {idx: [
-        #     'orange', 'cyan', 'b', 'green', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
+
         self.create_measure_points(cell2, msre_coords)
         # self.extracellular_stimuli(cell2)
         self.plot_morphology(cell2, fig, morph_ax_params2)

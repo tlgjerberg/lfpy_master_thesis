@@ -51,6 +51,7 @@ elec_pos = set_electrode_pos(measure_coords, x_shift, z_shift)
 
 def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=False, plot_sim=False):
 
+    # Setting spesific simulation paramters
     monophasic_pulse_params['pulse_amp'] = I
     monophasic_pulse_params['positions'] = pos
     cellsim_Hallermann_params['z_rot'] = z
@@ -61,6 +62,7 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
 
     if run_sim:
 
+        # Running the extracellular potential simulation
         extPotSim.run_ext_sim(cell_models_folder, measure_coords)
 
     if plot_sim:

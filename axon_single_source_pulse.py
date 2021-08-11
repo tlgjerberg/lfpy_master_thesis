@@ -99,7 +99,6 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
         plotSim.plot_cellsim(
             measure_coords, [0.05, 0.05, 0.3, 0.90], [-300, 300], [-1000, 1100])
 
-        # v_ss = extPotSim.find_steady_state_pot(cell_vmem)
     else:
         print('No plots generated!')
 
@@ -127,7 +126,7 @@ v_ss = COMM.gather(v_ss, root=0)
 
 if RANK == 0:
     assert v_ss[0] != None
-
+    # Trabsforming electrode positions into single array of distances
     elec_positions = elec_positions[elec_positions != 0]
     elec_dists = elec_positions.ravel()
     elec_dists *= -1
@@ -136,20 +135,15 @@ if RANK == 0:
         cellsim_bisc_stick_params, monophasic_pulse_params)
     cell = plotSim.return_cell(cell_models_folder)
     dV = plotSim.dV(v_ss)
+
     plotSim.plot_dV(elec_dists, dV)
-    # fit_exponential(elec_dists, dV, monoExp)
-    # fit_exponential(elec_dists, np.log(dV), monoExp)
-    # fit_exponential(np.log(elec_dists), np.log(dV), monoExp)
-    poly_coeffs1 = np.polyfit(elec_dists, dV, deg=2)
-    poly_coeffs2 = np.polyfit(elec_dists, np.log(dV), deg=2)
-    poly_coeffs3 = np.polyfit(np.log(elec_dists), np.log(dV), deg=2)
+
+    # Fitting the change in potential regular space as a power law
     fit_power(elec_dists, dV, (0, 0), powerlaw)
-    # fit_power(elec_dists, np.log(dV), (40, 0.6), powerlaw)
-    # fit_power(np.log(elec_dists), np.log(dV), (1, 0), powerlaw)
+
+    # Fitting the change in potential loglog space as a linear function
     fit_linear(np.log(elec_dists), np.log(dV), linlaw)
-    print('polynomial coeffs 1', poly_coeffs1)
-    print('polynomial coeffs 2', poly_coeffs2)
-    print('polynomial coeffs 3', poly_coeffs3)
+
 
 end = time.time()
 print(f'Time to execute {end - start} seconds')
