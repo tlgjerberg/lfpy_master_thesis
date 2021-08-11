@@ -12,31 +12,63 @@ font_params = {
 plt.rcParams.update(**font_params)
 
 
-def PolyCoefficients(x, coeffs):
-    """ Returns a polynomial for ``x`` values for the ``coeffs`` provided.
+class Fitting:
 
-    The coefficients must be in ascending order (``x**0`` to ``x**o``).
-    """
-    o = len(coeffs)
-    print(f'# This is a polynomial of order {ord}.')
-    y = 0
-    for i in range(o):
-        y += coeffs[i] * x**i
-    return y
+    def __init__(self, x, y):
 
+        self.x = x
+        self.y = y
 
-def monoExp(x, m, t, b):
-    return m * np.exp(-t * x) + b
+    def monoExp(self, x, m, t):
+        return m * np.exp(-t * x)
 
+    def powerlaw(self, x, m, t):
+        return m * np.power(x, t)
 
-def powerlaw(x, m, t):
-    return m * np.power(x, t)
+    def linlaw(self, x, m, t):
+        return t * x + m
 
+    def curve_fit(self, fit_func="linlaw"):
 
-def linlaw(x, m, t, ):
-    return t * x + m
-# def powerlaw(x, m, t):
-#     return m * x**(-t)
+        fit_functions = {'linlaw': self.linlaw,
+                         'monoExp': self.monoExp, 'powerlaw': self.powerlaw}
+
+        self.fit_func = fit_functions[fit_func]
+
+        params, cv = scipy.optimize.curve_fit(
+            self.fit_func, x, y, p0)
+
+        self.m, self.t = self.params
+
+    def fit_measure(self):
+        squaredDiffs = np.square(y - self.fit_func(x, m, t))
+        squaredDiffsFromMean = np.square(y - np.mean(y))
+        rSquared = 1 - np.sum(squaredDiffs) / np.sum(squaredDiffsFromMean)
+        print(f"R² = {rSquared}")
+
+    def print_fit_func(self):
+        if self.fit_func == linlaw:
+            print(f"Y =  {t} * x + {m}")
+        elif self.fit_func == powerlaw:
+            print(f"Y = {m} * x^({t})")
+        elif self.fit_func == monoExp:
+            print(f"Y = {m} * e^(-{t} * x)")
+
+    def plot_curve(self):
+
+        if self.fit_func == linlaw:
+            func_type = 'Linear'
+        elif self.fit_func == powerlaw:
+            func_type == 'Power'
+        elif self.fit_func == monoExp:
+            func_type == 'Exponential'
+
+        plt.figure()
+        plt.plot(x, y, '.', label="data")
+        plt.plot(x, self.fit_func(x, m, t), '--', label="fitted")
+        plt.title(f"Fitted {func_type} Curve")
+        plt.xlabel("r [$\mu m$]")
+        plt.ylabel("dV [mV]")
 
 
 def fit_power(x, y, p0, fit_func):
@@ -62,29 +94,6 @@ def fit_power(x, y, p0, fit_func):
     plt.savefig('data/axon_bisc_dist_stim' + f'power_fit_{m} * x^({t}).png')
     # inspect the parameters
     print(f"Y = {m} * x^({t})")
-    print(f"Tau = {tauSec * 1e6} µs")
-
-
-def fit_exponential(x, y, monoExp):
-    p0 = (2000, .1, 50)  # start with values near those we expect
-    params, cv = scipy.optimize.curve_fit(monoExp, x, y, p0)
-    m, t, b = params
-    sampleRate = 20_000  # Hz
-    tauSec = (1 / t) / sampleRate
-
-    squaredDiffs = np.square(y - monoExp(x, m, t, b))
-    squaredDiffsFromMean = np.square(y - np.mean(y))
-    rSquared = 1 - np.sum(squaredDiffs) / np.sum(squaredDiffsFromMean)
-    print(f"R² = {rSquared}")
-
-    # plot the results
-    plt.figure()
-    plt.plot(x, y, '.', label="data")
-    plt.plot(x, monoExp(x, m, t, b), '--', label="fitted")
-    plt.title("Fitted Exponential Curve")
-    plt.show()
-    # inspect the parameters
-    print(f"Y = {m} * e^(-{t} * x) + {b}")
     print(f"Tau = {tauSec * 1e6} µs")
 
 
