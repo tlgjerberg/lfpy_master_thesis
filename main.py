@@ -8,11 +8,6 @@ import time
 from os.path import join
 from mpi4py import MPI
 
-"""
- transmembrane current i soma/utvalgte punkter som func av tid x
-membran pot som func av tid
-"""
-
 
 class ExternalPotentialSim:
 
@@ -38,11 +33,14 @@ class ExternalPotentialSim:
         self.stop_time = elec_params['stop_time']
 
     def return_sim_name(self):
+        """Returns a string containing simulation paramters"""
+
         self.sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}_t={self.stop_time}_Amp={self.amp}mA'
 
         return self.sim_name
 
     def return_cell(self, cell_models_folder):
+        """Creates a LFPy cell object from a cell model"""
 
         self.cell_models_folder = cell_models_folder
         if self.cell_name == 'axon':
@@ -141,6 +139,8 @@ class ExternalPotentialSim:
         self.measure_pnts = np.array(measure_pnts)
 
     def print_measure_points(self, cell):
+        """Outputs the compartment name and coordinates of the set of
+        record compartments"""
 
         if hasattr(self, "measure_pnts"):
 
@@ -156,6 +156,9 @@ class ExternalPotentialSim:
 
     def extracellular_stimuli(self, cell):
         """
+        Computes the field produced by an extracellular electrode pulse and
+        applies it to the cell simulation.
+
         Parameters: LFPy Cell object, dict of electrode parameters
 
         Returns:
@@ -163,12 +166,12 @@ class ExternalPotentialSim:
         Seperate parameter definitions from function?
         """
         # Electrode position
-        # self.elec_pos = self.elec_params['positions']
         self.x0, self.y0, self.z0 = self.elec_params['positions']
 
+        # Extracellular conductivity
         sigma = self.elec_params['sigma']
 
-        # Calculating external field function
+        # Creating external field function
         self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
                                                            np.sqrt((self.x0 - x)**2 +
                                                                    (self.y0 - y)**2 +
@@ -190,9 +193,11 @@ class ExternalPotentialSim:
                                           cell.z.mean(axis=1)).reshape(
             cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
 
+        # Add the external potential to cell simulation
         cell.insert_v_ext(v_cell_ext, t)
 
     def run_cell_simulation(self, cell, vmem=True, imem=False):
+        """ Runs the LFPy cell simulation with recordings """
         cell.simulate(rec_vmem=vmem, rec_imem=imem)
 
     def find_steady_state_pot(self, cell_vmem):
@@ -204,17 +209,9 @@ class ExternalPotentialSim:
         # find_diff = np.diff(cell.vmem)
         return v_ss
 
-    # def find_max_mem_pot(self, cell_vmem, measure_pnts_idx):
-    #
-    #
-    #     for mp in self.measure_pnts:
-    #
-    #
-    #         v_max = np.max(cell_vmem[mp])
-    #
-    #     return v_max
-
     def max_mem_pot_dict(self, cell_vmem):
+        """ Returns a dictionary with the maximum membrane potential at each
+        recorded compartment chosen as a measurement point. """
 
         v_max = {}
 
@@ -225,6 +222,9 @@ class ExternalPotentialSim:
         return v_max
 
     def dV(self, v_ss):
+        """ Returns the change in potential dV computed from the steady state
+        potential. """
+
         v_ss = [i for i in v_ss if i]
 
         dV = np.zeros(len(v_ss))
@@ -243,38 +243,37 @@ class ExternalPotentialSim:
 
         return self.record_dist
 
-    def return_segment_coords(self, cell):
-
-        for idx in self.measure_pnts:
-            coords = [cell.x[idx].mean(axis=0), cell.y[idx].mean(
-                axis=0), cell.z[idx].mean(axis=0)]
-
     def export_data(self, cell, vmem=True, imem=False):
         """
-        Export data to text file:
-        - compartments measured and their coordinates
-        - array of current and membrane potential
+        Exports arrays of time array, membrane potential and currents of a cells
+        simulation to .npy files.
+
         """
+
+        # Create save folder if it does not exist
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
         file_name = self.return_sim_name()
 
+        # Save time array
         np.save(join(self.save_folder,
                      f'{file_name}_tvec'), cell.tvec)
 
+        # Save membrane potential array
         np.save(join(self.save_folder,
                      f'{file_name}_vmem'), cell.vmem)
 
+        # Save current array+
         if imem:
             np.save(join(self.save_folder,
                          f'{file_name}_imem'), cell.imem)
 
     def run_ext_sim(self, cell, cell_models_folder, comp_coords, passive=False):
+        """ Runs a cell simulation with an added extracellular potential """
 
         # print(cell.allsecnames)
         self.create_measure_points(cell, comp_coords)
         # self.print_measure_points(cell)
-        self.return_segment_coords(cell)
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
