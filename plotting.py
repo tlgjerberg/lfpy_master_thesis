@@ -226,7 +226,7 @@ class PlotSimulations(ExternalPotentialSim):
         """
 
         """
-        Function causes error
+        Function causes
         """
 
         # Dimensions of the morphology

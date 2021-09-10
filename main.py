@@ -9,7 +9,7 @@ from os.path import join
 from mpi4py import MPI
 
 
-class ExternalPotentialSim:
+class ExternalPotentialSimulation:
 
     def __init__(self, cell_params, elec_params):
 
