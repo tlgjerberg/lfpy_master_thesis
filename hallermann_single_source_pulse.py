@@ -59,11 +59,12 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
 
     extPotSim = ExternalPotentialSim(
         cellsim_Hallermann_params, monophasic_pulse_params)
+    cell = extPotSim.return_cell(cell_models_folder)
 
     if run_sim:
 
         # Running the extracellular potential simulation
-        extPotSim.run_ext_sim(cell_models_folder, measure_coords)
+        extPotSim.run_ext_sim(cell, cell_models_folder, measure_coords)
 
     if plot_sim:
         extPotSim.return_sim_name()
@@ -73,8 +74,9 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
             join(extPotSim.save_folder, extPotSim.sim_name + '_tvec.npy'))
         plotSim = PlotSimulations(
             cellsim_Hallermann_params, monophasic_pulse_params, cell_vmem, cell_tvec)
-        cell = plotSim.return_cell(cell_models_folder)
-        plotSim.plot_cellsim(measure_coords, [0.05, 0.05, 0.3, 0.90])
+
+        plotSim.plot_cellsim(cell_models_folder, measure_coords, [
+                             0.05, 0.05, 0.3, 0.90])
 
 
 start = time.time()

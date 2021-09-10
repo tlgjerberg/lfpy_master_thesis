@@ -219,10 +219,14 @@ class PlotSimulations(ExternalPotentialSim):
 
         ax_stim.plot(self.tvec, self.pulse / 1000, lw=2)
 
-    def plot_cellsim(self, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
+    def plot_cellsim(self, cell_models_folder, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
         """
         Ploting a combined figure of cell morphology, current amplitude and
         membrane potential
+        """
+
+        """
+        Function causes error
         """
 
         # Dimensions of the morphology
@@ -230,7 +234,7 @@ class PlotSimulations(ExternalPotentialSim):
         self.ylim = ylim
 
         # Recreating the cell object used in simulatios without running simul
-        cell = self.return_cell(self.cell_models_folder)
+        cell = self.return_cell(cell_models_folder)
         self.create_measure_points(cell, com_coords)
         self.extracellular_stimuli(cell)
 
@@ -345,15 +349,15 @@ class PlotSimulations(ExternalPotentialSim):
         # plt.show()
 
     def plot_dV(self, elec_dists, dV):
-    """Plots the change in potential dV against the electrode distance from
-    a recorded compartment."""
+        """Plots the change in potential dV against the electrode distance from
+        a recorded compartment."""
 
-    fig, ax = plt.subplots()
-    ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
-     ax.set_ylabel('dV (mV)')
-      ax.loglog(elec_dists, dV, '-o')
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
+        ax.set_ylabel('dV (mV)')
+        ax.loglog(elec_dists, dV, '-o')
 
-       if not os.path.isdir(self.save_folder):
+        if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)
 
         fig.savefig(
