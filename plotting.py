@@ -5,7 +5,7 @@ from matplotlib.patches import Ellipse
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import matplotlib.pyplot as plt
-from main import ExternalPotentialSim
+from main import ExternalPotentialSimulation
 import matplotlib
 from mpl_toolkits import mplot3d
 # matplotlib.use("AGG")

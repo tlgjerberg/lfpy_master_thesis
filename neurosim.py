@@ -1,7 +1,15 @@
+from main import ExternalPotentialSimulation
+from plotting import PlotSimulation
+
+import numpy as np
+import neuron
+import LFPy
+import os
+from os.path import join
 
 
 class NeuronSimulation:
-    def __init__(cell_params, elec_params):
+    def __init__(self, cell_params, elec_params):
 
         self.extPotSim = ExternalPotentialSimulation(elec_params)
         self.plotSim = PlotSimulation()
@@ -190,7 +198,7 @@ class NeuronSimulation:
         self.create_measure_points(cell, comp_coords)
         # self.print_measure_points(cell)
 
-        self.extPotSim.extracellular_stimuli(cell)
+        self.extPotSim.extracellular_stimuli(cell, self.tstop, self.dt)
         self.run_cell_simulation(cell)
         v_max = self.extPotSim.max_mem_pot_dict(cell.vmem)
         self.export_data(cell)

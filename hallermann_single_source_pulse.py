@@ -1,5 +1,6 @@
-from main import ExternalPotentialSim
-from plotting import PlotSimulations
+from main import ExternalPotentialSimulation
+from plotting import PlotSimulation
+from neurosim import NeuronSimulation
 from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_Hallermann_params)
 import numpy as np

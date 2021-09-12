@@ -17,15 +17,22 @@ class ExternalPotentialSimulation:
         self.elec_pos = elec_params['positions']
         self.start_time = elec_params['start_time']
         self.stop_time = elec_params['stop_time']
+        self.sigma = elec_params['sigma']
+        self.x0, self.y0, self.z0 = elec_params['positions']
+        self.pulse_type = elec_params['pulse_type']
 
-    def _monophaic_pulse():
-        # Setting pulse change at a given time interval
+    def _monophaic_pulse(self, n_tsteps, t):
+        # Setting monophasic pulse change at a given time interval
         self.pulse = np.zeros(n_tsteps)
         self.start_idx = np.argmin(np.abs(t - self.start_time))
         self.stop_idx = np.argmin(np.abs(t - self.stop_time))
         self.pulse[self.start_idx:self.stop_idx] = self.amp
 
-    def extracellular_stimuli(self, cell):
+    def insert_pulse(self, n_tsteps, t):
+        if self.pulse_type == 'monophasic':
+            self._monophaic_pulse(n_tsteps, t)
+
+    def extracellular_stimuli(self, cell, tstop, dt):
         """
         Computes the field produced by an extracellular electrode pulse and
         applies it to the cell simulation.
@@ -37,20 +44,20 @@ class ExternalPotentialSimulation:
         Seperate parameter definitions from function?
         """
         # Electrode position
-        self.x0, self.y0, self.z0 = self.elec_params['positions']
 
         # Extracellular conductivity
-        sigma = self.elec_params['sigma']
 
         # Creating external field function
-        self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * sigma *
+        self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * self.sigma *
                                                            np.sqrt((self.x0 - x)**2 +
                                                                    (self.y0 - y)**2 +
                                                                    (self.z0 - z)**2)))
 
-        # Generating time steps of simulation
-        n_tsteps = int(self.tstop / self.dt + 1)
-        t = np.arange(n_tsteps) * self.dt
+        # Generating time steps for pulse in simulation
+        n_tsteps = int(tstop / dt + 1)
+        t = np.arange(n_tsteps) * dt
+
+        self.insert_pulse(n_tsteps, t)
 
         # Applying the external field function to the cell simulation
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
