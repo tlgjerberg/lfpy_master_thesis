@@ -3,7 +3,8 @@
 class NeuronSimulation:
     def __init__(cell_params, elec_params):
 
-        self.extPotSim = ExternalPotentialSimulation(cell_params, elec_params)
+        self.extPotSim = ExternalPotentialSimulation(elec_params)
+        self.plotSim = PlotSimulation()
         self.root_folder = os.path.dirname(__file__)
         self.save_folder = join(
             self.root_folder, cell_params['save_folder_name'])
@@ -145,30 +146,42 @@ class NeuronSimulation:
         """ Runs the LFPy cell simulation with recordings """
         cell.simulate(rec_vmem=vmem, rec_imem=imem)
 
-        def export_data(self, cell, vmem=True, imem=False):
-            """
-            Exports arrays of time array, membrane potential and currents of a cells
-            simulation to .npy files.
+    def export_data(self, cell, vmem=True, imem=False):
+        """
+        Exports arrays of time array, membrane potential and currents of a cells
+        simulation to .npy files.
 
-            """
+        """
 
-            # Create save folder if it does not exist
-            if not os.path.isdir(self.save_folder):
-                os.makedirs(self.save_folder)
-            file_name = self.return_sim_name()
+        # Create save folder if it does not exist
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+        file_name = self.return_sim_name()
 
-            # Save time array
-            np.save(join(self.save_folder,
-                         f'{file_name}_tvec'), cell.tvec)
+        # Save time array
+        np.save(join(self.save_folder, f'{file_name}_tvec'), cell.tvec)
 
-            # Save membrane potential array
-            np.save(join(self.save_folder,
-                         f'{file_name}_vmem'), cell.vmem)
+        # Save membrane potential array
+        if vmem:
+            np.save(join(self.save_folder, f'{file_name}_vmem'), cell.vmem)
 
-            # Save current array+
-            if imem:
-                np.save(join(self.save_folder,
-                             f'{file_name}_imem'), cell.imem)
+        # Save current array
+        if imem:
+            np.save(join(self.save_folder, f'{file_name}_imem'), cell.imem)
+
+    def import_data(self, file_name, vmem=True, imem=True):
+
+        file_name = self.return_sim_name()
+
+        self.cell_tvec = np.load(join(self.save_folder, f'{file_name}_tvec'))
+
+        if vmem:
+            self.cell_vmem = np.load(
+                join(self.save_folder, f'{file_name}_vmem'))
+
+        if imem:
+            self.cell_imem = np.load(
+                join(self.save_folder, f'{file_name}_imem'))
 
     def run_ext_sim(self, cell, cell_models_folder, comp_coords, passive=False):
         """ Runs a cell simulation with an added extracellular potential """

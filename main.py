@@ -18,6 +18,13 @@ class ExternalPotentialSimulation:
         self.start_time = elec_params['start_time']
         self.stop_time = elec_params['stop_time']
 
+    def _monophaic_pulse():
+        # Setting pulse change at a given time interval
+        self.pulse = np.zeros(n_tsteps)
+        self.start_idx = np.argmin(np.abs(t - self.start_time))
+        self.stop_idx = np.argmin(np.abs(t - self.stop_time))
+        self.pulse[self.start_idx:self.stop_idx] = self.amp
+
     def extracellular_stimuli(self, cell):
         """
         Computes the field produced by an extracellular electrode pulse and
@@ -44,12 +51,6 @@ class ExternalPotentialSimulation:
         # Generating time steps of simulation
         n_tsteps = int(self.tstop / self.dt + 1)
         t = np.arange(n_tsteps) * self.dt
-
-        # Setting pulse change at a given time interval
-        self.pulse = np.zeros(n_tsteps)
-        self.start_idx = np.argmin(np.abs(t - self.start_time))
-        self.stop_idx = np.argmin(np.abs(t - self.stop_time))
-        self.pulse[self.start_idx:self.stop_idx] = self.amp
 
         # Applying the external field function to the cell simulation
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
