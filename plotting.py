@@ -20,9 +20,9 @@ font_params = {
 plt.rcParams.update(**font_params)
 
 
-class PlotSimulations(ExternalPotentialSim):
-    def __init__(self, cell_params, elec_params, cell_vmem=None, cell_tvec=None, cell_imem=None):
-        super().__init__(cell_params, elec_params)
+class PlotSimulation:
+
+    def __init__(self, cell_vmem=None, cell_tvec=None, cell_imem=None):
 
         self.vmem = cell_vmem
         self.imem = cell_imem

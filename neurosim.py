@@ -1,9 +1,28 @@
 
 
 class NeuronSimulation:
-    def __init__():
+    def __init__(cell_params, elec_params):
 
-        self.test = None
+        self.extPotSim = ExternalPotentialSimulation(cell_params, elec_params)
+        self.root_folder = os.path.dirname(__file__)
+        self.save_folder = join(
+            self.root_folder, cell_params['save_folder_name'])
+        self.dt = cell_params['dt']
+        self.tstop = cell_params['tstop']
+        self.cut_off = cell_params["cut_off"]
+        self.cell_name = cell_params['cell_name']
+        self.cell_dist_to_top = cell_params['cell_dist_to_top']
+        self.x_shift = cell_params['x_shift']
+        self.y_shift = cell_params['y_shift']
+        self.y_rot = cell_params['y_rot']
+        self.z_rot = cell_params['z_rot']  # Rotation around z-axis
+
+    def return_sim_name(self):
+        """Returns a string containing simulation paramters"""
+
+        self.sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}_t={self.stop_time}_Amp={self.amp}mA'
+
+        return self.sim_name
 
     def return_cell(self, cell_models_folder):
         """Creates a LFPy cell object from a cell model"""
@@ -70,6 +89,105 @@ class NeuronSimulation:
             cell.set_rotation(x=4.729, y=-3.05, z=self.z_rot)
             return cell
 
+    def find_terminals(self, cell, measure_pnt):
+
+        idx = cell.get_closest_idx(measure_pnt)
+        name = cell.get_idx_name(idx=idx)
+        # print(name)
+        # term_idx = cell.get_idx_children(parent=)
+        #
+        # if h.SectionRef(sec=sec).nchild() == 0:
+        #     pass
+
+    def create_measure_points(self, cell, com_coords):
+        """
+        Setting measurement of membrane potential in compartments closest to
+        coordinates.
+        """
+
+        measure_pnts = []
+
+        if com_coords.ndim == 1:
+
+            x, y, z = com_coords
+            measure_pnts.append(cell.get_closest_idx(x, y, z))
+
+        else:
+
+            for i in range(com_coords.shape[0]):
+
+                x, y, z = com_coords[i, :]
+                measure_pnt = cell.get_closest_idx(x, y, z)
+
+                self.find_terminals(cell, measure_pnt)
+                measure_pnts.append(measure_pnt)
+
+        self.measure_pnts = np.array(measure_pnts)
+
+    def print_measure_points(self, cell):
+        """Outputs the compartment name and coordinates of the set of
+        record compartments"""
+
+        if hasattr(self, "measure_pnts"):
+
+            print(self.measure_pnts)
+
+            for mc in self.measure_pnts:
+                print('name', cell.get_idx_name(mc))
+                print('measure_coord', cell.x[mc].mean(),
+                      cell.y[mc].mean(), cell.z[mc].mean())
+
+        else:
+            raise NameError(
+                "create_measure_points() method must be called")
+
     def run_cell_simulation(self, cell, vmem=True, imem=False):
         """ Runs the LFPy cell simulation with recordings """
         cell.simulate(rec_vmem=vmem, rec_imem=imem)
+
+        def export_data(self, cell, vmem=True, imem=False):
+            """
+            Exports arrays of time array, membrane potential and currents of a cells
+            simulation to .npy files.
+
+            """
+
+            # Create save folder if it does not exist
+            if not os.path.isdir(self.save_folder):
+                os.makedirs(self.save_folder)
+            file_name = self.return_sim_name()
+
+            # Save time array
+            np.save(join(self.save_folder,
+                         f'{file_name}_tvec'), cell.tvec)
+
+            # Save membrane potential array
+            np.save(join(self.save_folder,
+                         f'{file_name}_vmem'), cell.vmem)
+
+            # Save current array+
+            if imem:
+                np.save(join(self.save_folder,
+                             f'{file_name}_imem'), cell.imem)
+
+    def run_ext_sim(self, cell, cell_models_folder, comp_coords, passive=False):
+        """ Runs a cell simulation with an added extracellular potential """
+
+        # print(cell.allsecnames)
+        self.create_measure_points(cell, comp_coords)
+        # self.print_measure_points(cell)
+
+        self.extPotSim.extracellular_stimuli(cell)
+        self.run_cell_simulation(cell)
+        v_max = self.extPotSim.max_mem_pot_dict(cell.vmem)
+        self.export_data(cell)
+
+        cell.__del__()
+        return v_max
+
+    def run_current_sim(self, cell_models_folder, comp_coords, passive=False):
+        cell = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell, comp_coords)
+        self.extracellular_stimuli(cell)
+        self.run_cell_simulation(cell, False, True)
+        self.export_data(cell, False, True)
