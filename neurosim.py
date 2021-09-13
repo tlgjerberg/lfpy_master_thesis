@@ -6,6 +6,16 @@ import neuron
 import LFPy
 import os
 from os.path import join
+import matplotlib.pyplot as plt
+
+font_params = {
+    'font.size': 10,
+    'axes.labelsize': 16,
+    'xtick.labelsize': 14,
+    'ytick.labelsize': 14
+}
+
+plt.rcParams.update(**font_params)
 
 
 class NeuronSimulation:
@@ -29,7 +39,13 @@ class NeuronSimulation:
     def return_sim_name(self):
         """Returns a string containing simulation paramters"""
 
-        self.sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}_t={self.stop_time}_Amp={self.amp}mA'
+        x = self.extPotSim.x0
+        y = self.extPotSim.y0
+        z = self.extPotSim.z0
+        amp = self.extPotSim.amp
+        stop_time = self.extPotSim.stop_time
+
+        self.sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={x}_{y}_{z}_t={stop_time}_Amp={amp}mA'
 
         return self.sim_name
 
@@ -154,6 +170,14 @@ class NeuronSimulation:
         """ Runs the LFPy cell simulation with recordings """
         cell.simulate(rec_vmem=vmem, rec_imem=imem)
 
+    def return_vmem(self, cell):
+
+        return cell.vmem
+
+    def return_imem(self, cell):
+
+        return cell.imem
+
     def export_data(self, cell, vmem=True, imem=False):
         """
         Exports arrays of time array, membrane potential and currents of a cells
@@ -191,6 +215,18 @@ class NeuronSimulation:
             self.cell_imem = np.load(
                 join(self.save_folder, f'{file_name}_imem'))
 
+    def max_mem_pot_dict(self, cell_vmem):
+        """ Returns a dictionary with the maximum membrane potential at each
+        recorded compartment chosen as a measurement point. """
+
+        v_max = {}
+
+        for mp in self.measure_pnts:
+
+            v_max[f'{mp}'] = np.max(cell_vmem[mp])
+
+        return v_max
+
     def run_ext_sim(self, cell, cell_models_folder, comp_coords, passive=False):
         """ Runs a cell simulation with an added extracellular potential """
 
@@ -200,7 +236,7 @@ class NeuronSimulation:
 
         self.extPotSim.extracellular_stimuli(cell, self.tstop, self.dt)
         self.run_cell_simulation(cell)
-        v_max = self.extPotSim.max_mem_pot_dict(cell.vmem)
+        v_max = self.max_mem_pot_dict(cell.vmem)
         self.export_data(cell)
 
         cell.__del__()
@@ -212,3 +248,56 @@ class NeuronSimulation:
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell, False, True)
         self.export_data(cell, False, True)
+
+    def plot_cellsim(self, cell_models_folder, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
+        """
+        Ploting a combined figure of cell morphology, current amplitude and
+        membrane potential
+        """
+
+        # Dimensions of the morphology plot
+        self.xlim = xlim
+        self.ylim = ylim
+
+        # Recreating the cell object used in simulatios without running simul
+        cell = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell, com_coords)
+
+        self.extPotSim.extracellular_stimuli(cell, self.tstop, self.dt)
+
+        # Simulating cell after all parameters and field has been added
+        fig = plt.figure(figsize=[10, 8])
+
+        # Defining figure frame and parameters for combined figure
+        fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
+                            top=0.9, bottom=0.1)
+
+        self.plotSim.plot_idxs(self.measure_pnts)
+
+        # Adding morphology to figure
+        self.plotSim.plot_morphology(cell, fig, xlim, ylim, morph_ax_params)
+
+        if field:
+            self.plot_external_field(cell, fig)
+
+        # # Setting size and location of plotted potentials and current
+        ax_top = 0.90
+        ax_h = 0.30
+        ax_w = 0.45
+        ax_left = 0.5
+        stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
+        mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
+
+        # Adding mambrane potential, current pulse and electrode to combined figure
+        self.plotSim.plot_membrane_potential(fig, mem_axes_placement)
+        self.plotSim.plot_current_pulse(fig, stim_axes_placement)
+        self.plotSim.draw_electrode()
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        self.return_sim_name()
+        fig.savefig(join(
+            self.save_folder, f'point_source_' + self.sim_name + '.png'))
+        # plt.show()
+        plt.close(fig=fig)

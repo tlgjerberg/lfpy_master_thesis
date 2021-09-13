@@ -22,20 +22,28 @@ plt.rcParams.update(**font_params)
 
 class PlotSimulation:
 
-    def __init__(self, cell_vmem=None, cell_tvec=None, cell_imem=None):
+    def __init__(self):
 
-        self.vmem = cell_vmem
-        self.imem = cell_imem
-        self.tvec = cell_tvec
+        self.placholder = None
 
-    def plot_morphology(self, cell, fig, morph_ax_params=[0.1, 0.1, 0.9, 0.9]):
+    def plot_idxs(self, measure_pnts):
+
+        # Adding list of measurement points to plotting class
+        self.cell_plot_idxs = measure_pnts.astype(
+            dtype='int')
+
+        # Marking the compartments of measurement with individual colors
+        self.cell_plot_colors = {idx: [
+            'b', 'cyan', 'orange', 'green', 'purple', 'yellow'][num] for num, idx in enumerate(self.cell_plot_idxs)}
+
+    def plot_morphology(self, cell, fig, xlim, ylim, morph_ax_params=[0.1, 0.1, 0.9, 0.9]):
         """Plots the morphology of a cell model with separate colors for each
         type of neuron section and points marking compartments of interest
         according to the measurement points."""
 
         # Adding axes with appropriate parameters
         self.ax_m = fig.add_axes(morph_ax_params, aspect=1, frameon=False,
-                                 xticks=[], yticks=[], ylim=self.ylim, xlim=self.xlim)
+                                 xticks=[], yticks=[], ylim=ylim, xlim=xlim)
 
         # Names of different neuron parts and color codings for each
         possible_names = ["my", "axon", "Unmyelin", "node", "hilloc",
@@ -192,12 +200,12 @@ class PlotSimulation:
         # Add colorbar corresonding to field strength in mV
         fig.colorbar(self.ext_field_im, pad=0.05, ax=self.ax_m, cax=cax)
 
-    def plot_membrane_potential(self, fig, placement=[0.17, 0.11, .7, .8], save=False):
+    def plot_membrane_potential(self, fig, tstop, placement=[0.17, 0.11, .7, .8], save=False):
         """Plots the change in membrane potential over time corresponding to
         each compartment marked as a measurement point."""
 
         ax_vm = fig.add_axes(placement,  # ylim=[-120, 50],
-                             xlim=[0, self.tstop], xlabel="Time (ms)")
+                             xlim=[0, tstop], xlabel="Time (ms)")
 
         ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
 
@@ -210,75 +218,14 @@ class PlotSimulation:
             plt.savefig(
                 join(self.save_folder, 'mem_pot_' + self.sim_name + '.png'), dpi=300)
 
-    def plot_current_pulse(self, fig, placement):
+    def plot_current_pulse(self, fig, tstop, placement):
         """Plots the current pulse used to set up the stimulating electrical
         field."""
 
-        ax_stim = fig.add_axes(placement, xlim=[0, self.tstop],
+        ax_stim = fig.add_axes(placement, xlim=[0, tstop],
                                ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
 
         ax_stim.plot(self.tvec, self.pulse / 1000, lw=2)
-
-    def plot_cellsim(self, cell_models_folder, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
-        """
-        Ploting a combined figure of cell morphology, current amplitude and
-        membrane potential
-        """
-
-        """
-        Function causes
-        """
-
-        # Dimensions of the morphology
-        self.xlim = xlim
-        self.ylim = ylim
-
-        # Recreating the cell object used in simulatios without running simul
-        cell = self.return_cell(cell_models_folder)
-        self.create_measure_points(cell, com_coords)
-        self.extracellular_stimuli(cell)
-
-        # Simulating cell after all parameters and field has been added
-        fig = plt.figure(figsize=[10, 8])
-
-        # Defining figure frame and parameters for combined figure
-        fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
-                            top=0.9, bottom=0.1)
-
-        # Marking the compartments of measurement with individual colors
-        self.cell_plot_idxs = self.measure_pnts.astype(
-            dtype='int')  # List of measurement points
-
-        self.cell_plot_colors = {idx: [
-            'b', 'cyan', 'orange', 'green', 'purple', 'yellow'][num] for num, idx in enumerate(self.cell_plot_idxs)}
-
-        # Adding morphology to figure
-        self.plot_morphology(cell, fig, morph_ax_params)
-
-        if field:
-            self.plot_external_field(cell, fig)
-
-        # # Setting size and location of plotted potentials and current
-        ax_top = 0.90
-        ax_h = 0.30
-        ax_w = 0.45
-        ax_left = 0.5
-        stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
-        mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
-
-        # Adding mambrane potential, current pulse and electrode to combined figure
-        self.plot_membrane_potential(fig, mem_axes_placement)
-        self.plot_current_pulse(fig, stim_axes_placement)
-        self.draw_electrode()
-
-        if not os.path.isdir(self.save_folder):
-            os.makedirs(self.save_folder)
-
-        self.return_sim_name()
-        fig.savefig(join(
-            self.save_folder, f'point_source_' + self.sim_name + '.png'))
-        # plt.show()
-        plt.close(fig=fig)
 
     def plot_cellsim_angle(self, com_coords, morph_ax_params, xlim=[-100, 2000], ylim=[-2000, 2000], field=False):
         """

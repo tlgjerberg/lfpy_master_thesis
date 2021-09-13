@@ -54,6 +54,7 @@ class ExternalPotentialSimulation:
                                                                    (self.z0 - z)**2)))
 
         # Generating time steps for pulse in simulation
+        print(tstop, dt)
         n_tsteps = int(tstop / dt + 1)
         t = np.arange(n_tsteps) * dt
 
@@ -76,18 +77,6 @@ class ExternalPotentialSimulation:
         v_ss_idx = np.argmax(cell_vmem)
         # find_diff = np.diff(cell.vmem)
         return v_ss
-
-    def max_mem_pot_dict(self, cell_vmem):
-        """ Returns a dictionary with the maximum membrane potential at each
-        recorded compartment chosen as a measurement point. """
-
-        v_max = {}
-
-        for mp in self.measure_pnts:
-
-            v_max[f'{mp}'] = np.max(cell_vmem[mp])
-
-        return v_max
 
     def dV(self, v_ss):
         """ Returns the change in potential dV computed from the steady state

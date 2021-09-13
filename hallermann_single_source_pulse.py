@@ -69,10 +69,8 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
 
     if plot_sim:
 
-        plotSim = PlotSimulations(cell_vmem, cell_tvec)
-
-        plotSim.plot_cellsim(cell_models_folder, measure_coords, [
-                             0.05, 0.05, 0.3, 0.90])
+        neuronSim.plot_cellsim(cell_models_folder, measure_coords, [
+            0.05, 0.05, 0.3, 0.90])
 
 
 start = time.time()
