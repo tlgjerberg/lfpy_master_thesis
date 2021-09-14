@@ -20,6 +20,7 @@ class ExternalPotentialSimulation:
         self.sigma = elec_params['sigma']
         self.x0, self.y0, self.z0 = elec_params['positions']
         self.pulse_type = elec_params['pulse_type']
+        self.electrode_radii = elec_params['electrode_radii']
 
     def _monophaic_pulse(self, n_tsteps, t):
         # Setting monophasic pulse change at a given time interval

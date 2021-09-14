@@ -5,7 +5,8 @@ import numpy as np
 import neuron
 import LFPy
 import os
-from os.path import join
+from os.path import (join, isfile)
+from pathlib import Path
 import matplotlib.pyplot as plt
 
 font_params = {
@@ -170,6 +171,10 @@ class NeuronSimulation:
         """ Runs the LFPy cell simulation with recordings """
         cell.simulate(rec_vmem=vmem, rec_imem=imem)
 
+    def return_tvec(self, cell):
+
+        return cell.tvec
+
     def return_vmem(self, cell):
 
         return cell.vmem
@@ -201,19 +206,25 @@ class NeuronSimulation:
         if imem:
             np.save(join(self.save_folder, f'{file_name}_imem'), cell.imem)
 
-    def import_data(self, file_name, vmem=True, imem=True):
+    def import_data(self, vmem=True, imem=False):
 
         file_name = self.return_sim_name()
 
-        self.cell_tvec = np.load(join(self.save_folder, f'{file_name}_tvec'))
+        tfile = join(self.save_folder, f'{file_name}_tvec.npy')
+        vfile = join(self.save_folder, f'{file_name}_vmem.npy')
+        ifile = join(self.save_folder, f'{file_name}_imem.npy')
 
-        if vmem:
-            self.cell_vmem = np.load(
-                join(self.save_folder, f'{file_name}_vmem'))
+        if isfile(tfile):
+            self.cell_tvec = np.load(tfile)
 
-        if imem:
-            self.cell_imem = np.load(
-                join(self.save_folder, f'{file_name}_imem'))
+        else:
+            print('File not found!')
+
+        if vmem and isfile(vfile):
+            self.cell_vmem = np.load(vfile)
+
+        if imem and isfile(ifile):
+            self.cell_imem = np.load(ifile)
 
     def max_mem_pot_dict(self, cell_vmem):
         """ Returns a dictionary with the maximum membrane potential at each
@@ -255,6 +266,8 @@ class NeuronSimulation:
         membrane potential
         """
 
+        self.import_data()
+
         # Dimensions of the morphology plot
         self.xlim = xlim
         self.ylim = ylim
@@ -289,9 +302,18 @@ class NeuronSimulation:
         mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
 
         # Adding mambrane potential, current pulse and electrode to combined figure
-        self.plotSim.plot_membrane_potential(fig, mem_axes_placement)
-        self.plotSim.plot_current_pulse(fig, stim_axes_placement)
-        self.plotSim.draw_electrode()
+        # self.return_vmem(cell)
+        self.plotSim.plot_membrane_potential(
+            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement)
+
+        self.plotSim.plot_current_pulse(
+            fig, self.cell_tvec, self.extPotSim.pulse, self.tstop, stim_axes_placement)
+
+        x = self.extPotSim.x0
+        y = self.extPotSim.y0
+        z = self.extPotSim.z0
+        electrode_radii = self.extPotSim.electrode_radii
+        self.plotSim.draw_electrode(x, y, z, electrode_radii)
 
         if not os.path.isdir(self.save_folder):
             os.makedirs(self.save_folder)

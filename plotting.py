@@ -153,13 +153,12 @@ class PlotSimulation:
         fig_3dmorph.savefig(
             join(self.save_folder, f'{self.cell_name}_{self.amp}mA_elec_pos={self.elec_pos}.png'))
 
-    def draw_electrode(self):
+    def draw_electrode(self, x, y, z, electrode_radii):
         """Adds a point representing an electrode."""
 
-        ellipse_pos = [self.elec_params["positions"]
-                       [0], self.elec_params["positions"][2]]
-        self.ax_m.add_artist(Ellipse(ellipse_pos, width=10 * self.elec_params["electrode_radii"],
-                                     height=10 * self.elec_params["electrode_radii"], fc='gray', ec='black'))
+        ellipse_pos = [x, z]
+        self.ax_m.add_artist(Ellipse(ellipse_pos, width=10 * electrode_radii,
+                                     height=10 * electrode_radii, fc='gray', ec='black'))
 
     def plot_external_field(self, cell, fig, cb=False):
         """Plots a representation of the extracellular field around an
@@ -200,7 +199,7 @@ class PlotSimulation:
         # Add colorbar corresonding to field strength in mV
         fig.colorbar(self.ext_field_im, pad=0.05, ax=self.ax_m, cax=cax)
 
-    def plot_membrane_potential(self, fig, tstop, placement=[0.17, 0.11, .7, .8], save=False):
+    def plot_membrane_potential(self, fig, tvec, vmem, tstop, placement=[0.17, 0.11, .7, .8], save=False):
         """Plots the change in membrane potential over time corresponding to
         each compartment marked as a measurement point."""
 
@@ -210,22 +209,22 @@ class PlotSimulation:
         ax_vm.set_ylabel("Membrane\npotential (mV)", labelpad=-3)
 
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
-        [ax_vm.plot(self.tvec, self.vmem[idx],
+        [ax_vm.plot(tvec, vmem[idx],
                     c=self.cell_plot_colors[idx], lw=2) for idx in self.cell_plot_idxs]
-        if save:
-            plt.legend([f'Compartment {self.measure_pnts[0]}',
-                        f'Compartment {self.measure_pnts[1]}', f'Compartment {self.measure_pnts[2]}'])
-            plt.savefig(
-                join(self.save_folder, 'mem_pot_' + self.sim_name + '.png'), dpi=300)
+        # if save:
+        #     plt.legend([f'Compartment {self.measure_pnts[0]}',
+        #                 f'Compartment {self.measure_pnts[1]}', f'Compartment {self.measure_pnts[2]}'])
+        #     plt.savefig(
+        #         join(self.save_folder, 'mem_pot_' + self.sim_name + '.png'), dpi=300)
 
-    def plot_current_pulse(self, fig, tstop, placement):
+    def plot_current_pulse(self, fig, tvec, pulse, tstop, placement):
         """Plots the current pulse used to set up the stimulating electrical
         field."""
 
         ax_stim = fig.add_axes(placement, xlim=[0, tstop],
                                ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
 
-        ax_stim.plot(self.tvec, self.pulse / 1000, lw=2)
+        ax_stim.plot(tvec, pulse / 1000, lw=2)
 
     def plot_cellsim_angle(self, com_coords, morph_ax_params, xlim=[-100, 2000], ylim=[-2000, 2000], field=False):
         """
