@@ -38,9 +38,9 @@ def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim
     monophasic_pulse_params['positions'] = pos
     cellsim_Hallermann_params['z_rot'] = z
 
-    extPotSim = ExternalPotentialSim(
+    neuronSim = NeuronSimulation(
         cellsim_Hallermann_params, monophasic_pulse_params)
-    sim_name = extPotSim.return_sim_name()
+    # sim_name = extPotSim.return_sim_name()
 
     if run_sim:
 

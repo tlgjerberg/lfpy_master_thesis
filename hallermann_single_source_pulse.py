@@ -82,7 +82,7 @@ for I in current_amps:
         if not divmod(task_idx, SIZE)[1] == RANK:
             continue
         run_hallermann(
-            cell_models_folder, measure_coords, I, pos, z, True, True)
+            cell_models_folder, measure_coords, I, pos, z, False, True)
         print("RANK %d doing task %d" % (RANK, task_idx))
 
 

@@ -171,14 +171,17 @@ class NeuronSimulation:
         """ Runs the LFPy cell simulation with recordings """
         cell.simulate(rec_vmem=vmem, rec_imem=imem)
 
+    @property
     def return_tvec(self, cell):
 
         return cell.tvec
 
+    @property
     def return_vmem(self, cell):
 
         return cell.vmem
 
+    @property
     def return_imem(self, cell):
 
         return cell.imem
@@ -323,3 +326,54 @@ class NeuronSimulation:
             self.save_folder, f'point_source_' + self.sim_name + '.png'))
         # plt.show()
         plt.close(fig=fig)
+
+        cell.__del__()
+
+    def plot_double_morphology(self, cell_models_folder, z_rot, msre_coords, xlim=[-760, 760], ylim=[-500, 1200]):
+        """Plots two mrophologies next to each other with an electrode
+        representation placed at the same point between them at both morphology
+        plots."""
+
+        self.xlim = xlim
+        self.ylim = ylim
+        morph_ax_params1 = [0.05, 0.1, 0.5, 0.9]
+        morph_ax_params2 = [0.473, 0.1, 0.5, 0.9]
+
+        fig = plt.figure()
+        self.z_rot = z_rot[0]
+        cell1 = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell1, msre_coords)
+        self.extracellular_stimuli(cell1)
+
+        self.cell_plot_idxs = self.measure_pnts.astype(dtype='int')
+        self.cell_plot_colors = {idx: [
+            'orange', 'green', 'cyan',  'b', 'purple'][num] for num, idx in enumerate(self.cell_plot_idxs)}
+
+        self.plotSim.plot_morphology(cell, fig, xlim, ylim, morph_ax_params1)
+
+        if self.elec_pos[0] > 0:
+            self.draw_electrode()
+
+        cell1.__del__()
+
+        self.z_rot = z_rot[1]
+        cell2 = self.return_cell(cell_models_folder)
+
+        self.create_measure_points(cell2, msre_coords)
+        # self.extracellular_stimuli(cell2)
+        self.plotSim.plot_morphology(cell, fig, xlim, ylim, morph_ax_params2)
+
+        if self.elec_pos[0] < 0:
+            self.draw_electrode()
+
+        cell2.__del__()
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        fig.savefig(join(
+            self.save_folder, f'double_hallermann_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}.png'))
+        # plt.show()
+        plt.close(fig=fig)
+
+        cell.__del__()
