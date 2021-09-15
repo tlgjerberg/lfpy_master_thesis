@@ -5,7 +5,7 @@ from matplotlib.patches import Ellipse
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import matplotlib.pyplot as plt
-from main import ExternalPotentialSimulation
+# from main import ExternalPotentialSimulation
 import matplotlib
 from mpl_toolkits import mplot3d
 # matplotlib.use("AGG")
@@ -163,6 +163,8 @@ class PlotSimulation:
     def plot_external_field(self, cell, fig, cb=False):
         """Plots a representation of the extracellular field around an
         electrode."""
+
+        # self.extracellular_stimuli(cell)
 
         # Adding external field visualization to cell morphology figure
         field_x_dim = abs(self.xlim[0]) + abs(self.xlim[1])

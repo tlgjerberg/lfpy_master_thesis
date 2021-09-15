@@ -58,18 +58,18 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
     cellsim_Hallermann_params['z_rot'] = z
     # monophasic_pulse_params['stop_time'] = 2.2
 
-    neuronSim = NeuronSimulation(
+    extPotSim = ExternalPotentialSimulation(
         cellsim_Hallermann_params, monophasic_pulse_params)
-    cell = neuronSim.return_cell(cell_models_folder)
+    cell = extPotSim.return_cell(cell_models_folder)
 
     if run_sim:
 
         # Running the extracellular potential simulation
-        neuronSim.run_ext_sim(cell, cell_models_folder, measure_coords)
+        extPotSim.run_ext_sim(cell, measure_coords)
 
     if plot_sim:
 
-        neuronSim.plot_cellsim(cell_models_folder, measure_coords, [
+        extPotSim.plot_cellsim(cell_models_folder, measure_coords, [
             0.05, 0.05, 0.3, 0.90])
 
 

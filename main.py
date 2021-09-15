@@ -7,20 +7,30 @@ import sys
 import time
 from os.path import join
 from mpi4py import MPI
+from neurosim import NeuronSimulation
+import matplotlib.pyplot as plt
 
 
-class ExternalPotentialSimulation:
+class ExternalPotentialSimulation(NeuronSimulation):
 
-    def __init__(self, elec_params):
+    def __init__(self, cell_params, elec_params):
+        super().__init__(cell_params)
 
         self.amp = elec_params['pulse_amp']
-        self.elec_pos = elec_params['positions']
         self.start_time = elec_params['start_time']
         self.stop_time = elec_params['stop_time']
-        self.sigma = elec_params['sigma']
+        self.sigma = elec_params['sigma']  # Extracellular conductivity
+        # Electrode position
         self.x0, self.y0, self.z0 = elec_params['positions']
         self.pulse_type = elec_params['pulse_type']
         self.electrode_radii = elec_params['electrode_radii']
+
+        self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot: .2f}_y_rot={self.y_rot: .2f}_elec_pos={self.x0}_{self.y0}_{self.z0}_t={self.stop_time}_Amp={self.amp}mA'
+
+    def return_sim_name(self):
+        """Returns a string containing simulation paramters"""
+
+        return self._sim_name
 
     def _monophaic_pulse(self, n_tsteps, t):
         # Setting monophasic pulse change at a given time interval
@@ -33,20 +43,15 @@ class ExternalPotentialSimulation:
         if self.pulse_type == 'monophasic':
             self._monophaic_pulse(n_tsteps, t)
 
-    def extracellular_stimuli(self, cell, tstop, dt):
+    def extracellular_stimuli(self, cell):
         """
         Computes the field produced by an extracellular electrode pulse and
         applies it to the cell simulation.
 
         Parameters: LFPy Cell object, dict of electrode parameters
 
-        Returns:
-
-        Seperate parameter definitions from function?
+        Adds an external potential to the cell object defined by a pulse
         """
-        # Electrode position
-
-        # Extracellular conductivity
 
         # Creating external field function
         self.ext_field = np.vectorize(lambda x, y, z: 1 / (4 * np.pi * self.sigma *
@@ -55,9 +60,8 @@ class ExternalPotentialSimulation:
                                                                    (self.z0 - z)**2)))
 
         # Generating time steps for pulse in simulation
-        print(tstop, dt)
-        n_tsteps = int(tstop / dt + 1)
-        t = np.arange(n_tsteps) * dt
+        n_tsteps = int(self.tstop / self.dt + 1)
+        t = np.arange(n_tsteps) * self.dt
 
         self.insert_pulse(n_tsteps, t)
 
@@ -67,7 +71,7 @@ class ExternalPotentialSimulation:
                                           cell.z.mean(axis=1)).reshape(
             cell.totnsegs, 1) * self.pulse.reshape(1, n_tsteps)
 
-        # Add the external potential to cell simulation
+        # Adding the external potential to cell simulation
         cell.insert_v_ext(v_cell_ext, t)
 
     def find_steady_state_pot(self, cell_vmem):
@@ -81,8 +85,15 @@ class ExternalPotentialSimulation:
 
     def dV(self, v_ss):
         """ Returns the change in potential dV computed from the steady state
-        potential. """
+            potential.
 
+        Input: An array containing the steady state potentials from a set of
+               simulations
+
+        Returns: 1-D array of change in potential
+        """
+
+        # Flattens array of steady state potentials
         v_ss = [i for i in v_ss if i]
 
         dV = np.zeros(len(v_ss))
@@ -100,3 +111,90 @@ class ExternalPotentialSimulation:
                 com_coords[idx, :] - np.array([self.x0, self.y0, self.z0])))
 
         return self.record_dist
+
+    def run_ext_sim(self, cell, comp_coords, passive=False):
+        """ Runs a cell simulation with an added extracellular potential
+
+            Input: LFPy Cell object and coordinates for the comparments to
+                   record.
+        """
+
+        # print(cell.allsecnames)
+        self.create_measure_points(cell, comp_coords)
+        # self.print_measure_points(cell)
+
+        self.extracellular_stimuli(cell)
+        self.run_cell_simulation(cell)
+        v_max = self.max_mem_pot_dict(cell.vmem)
+        self.export_data(cell)
+
+        cell.__del__()
+        return v_max
+
+    def plot_cellsim(self, cell_models_folder, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
+        """
+        Ploting a combined figure of cell morphology, current amplitude and
+        membrane potential
+        """
+
+        self.import_data()
+
+        # print(self.cell_tvec[0])
+        # Dimensions of the morphology plot
+        self.xlim = xlim
+        self.ylim = ylim
+
+        # Recreating the cell object used in simulatios without running simul
+        cell = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell, com_coords)
+
+        # Simulating cell after all parameters and field has been added
+        fig = plt.figure(figsize=[10, 8])
+
+        # Defining figure frame and parameters for combined figure
+        fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
+                            top=0.9, bottom=0.1)
+
+        self.plotSim.plot_idxs(self.measure_pnts)
+
+        # Adding morphology to figure
+        self.plotSim.plot_morphology(
+            cell, fig, xlim, ylim, morph_ax_params)
+
+        n_tsteps = int(self.tstop / self.dt + 1)
+        t = np.arange(n_tsteps) * self.dt
+
+        self.insert_pulse(n_tsteps, t)
+
+        if field:
+            self.plotSim.plot_external_field(cell, fig)
+
+        # # Setting size and location of plotted potentials and current
+        ax_top = 0.90
+        ax_h = 0.30
+        ax_w = 0.45
+        ax_left = 0.5
+        stim_axes_placement = [ax_left, ax_top - ax_h, ax_w, ax_h]
+        mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
+
+        # Adding mambrane potential, current pulse and electrode to combined figure
+
+        self.plotSim.plot_membrane_potential(
+            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement)
+
+        self.plotSim.plot_current_pulse(
+            fig, self.cell_tvec, self.pulse, self.tstop, stim_axes_placement)
+
+        self.plotSim.draw_electrode(
+            self.x0, self.y0, self.z0, self.electrode_radii)
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        self.return_sim_name()
+        fig.savefig(join(
+            self.save_folder, f'point_source_' + self._sim_name + '.png'))
+        # plt.show()
+        plt.close(fig=fig)
+
+        cell.__del__()
