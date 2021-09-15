@@ -388,20 +388,3 @@ class PlotSimulation:
         # plt.show()
 
         plt.close(fig=fig)
-
-    def plot_double_mem_pot(self, cell_vmem, cell_tvec):
-        mem_axes_placement1 = [0.2, 0.6, 0.6, 0.3]
-        mem_axes_placement2 = [0.2, 0.2, 0.6, 0.3]
-        fig = plt.figure()
-
-        self.plot_membrane_potential(fig, mem_axes_placement1)
-
-        self.tvec = cell_tvec
-        self.vmem = cell_vmem
-
-        self.plot_membrane_potential(fig, mem_axes_placement2)
-
-        fig.savefig(join(
-            self.save_folder, f'double_vmem_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.elec_pos[0]}_{self.elec_pos[1]}_{self.elec_pos[2]}.png'))
-        # plt.show()
-        plt.close(fig=fig)

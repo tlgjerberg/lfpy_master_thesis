@@ -25,12 +25,16 @@ class ExternalPotentialSimulation(NeuronSimulation):
         self.pulse_type = elec_params['pulse_type']
         self.electrode_radii = elec_params['electrode_radii']
 
-        self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot: .2f}_y_rot={self.y_rot: .2f}_elec_pos={self.x0}_{self.y0}_{self.z0}_t={self.stop_time}_Amp={self.amp}mA'
+        self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.x0}_{self.y0}_{self.z0}_t={self.stop_time}_Amp={self.amp}mA'
 
     def return_sim_name(self):
         """Returns a string containing simulation paramters"""
 
         return self._sim_name
+
+    def update_sim_name(self):
+
+        self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.x0}_{self.y0}_{self.z0}_t={self.stop_time}_Amp={self.amp}mA'
 
     def _monophaic_pulse(self, n_tsteps, t):
         # Setting monophasic pulse change at a given time interval
@@ -155,7 +159,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
         fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
                             top=0.9, bottom=0.1)
 
-        self.plotSim.plot_idxs(self.measure_pnts)
+        self.plot_idxs()
 
         # Adding morphology to figure
         self.plotSim.plot_morphology(
@@ -198,3 +202,77 @@ class ExternalPotentialSimulation(NeuronSimulation):
         plt.close(fig=fig)
 
         cell.__del__()
+
+    def plot_double_morphology(self, cell_models_folder, z_rot, msre_coords, xlim=[-760, 760], ylim=[-500, 1200]):
+        """Plots two mrophologies next to each other with an electrode
+        representation placed at the same point between them at both morphology
+        plots."""
+
+        self.xlim = xlim
+        self.ylim = ylim
+        morph_ax_params1 = [0.05, 0.1, 0.5, 0.9]
+        morph_ax_params2 = [0.473, 0.1, 0.5, 0.9]
+
+        fig = plt.figure()
+        self.z_rot = z_rot[0]
+        cell1 = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell1, msre_coords)
+        self.extracellular_stimuli(cell1)
+
+        self.plotSim.plot_idxs(self.measure_pnts)
+
+        self.plotSim.plot_morphology(
+            cell1, fig, xlim, ylim, morph_ax_params1)
+
+        if self.x0 > 0:
+            self.plotSim.draw_electrode(
+                self.x0, self.y0, self.z0, self.electrode_radii)
+
+        cell1.__del__()
+
+        self.z_rot = z_rot[1]
+        cell2 = self.return_cell(cell_models_folder)
+
+        self.create_measure_points(cell2, msre_coords)
+        # self.extracellular_stimuli(cell2)
+        self.plotSim.plot_morphology(
+            cell2, fig, xlim, ylim, morph_ax_params2)
+
+        if self.x0 < 0:
+            self.plotSim.draw_electrode(
+                self.x0, self.y0, self.z0, self.electrode_radii)
+
+        cell2.__del__()
+
+        if not os.path.isdir(self.save_folder):
+            os.makedirs(self.save_folder)
+
+        fig.savefig(join(
+            self.save_folder, f'double_hallermann_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'))
+        # plt.show()
+        plt.close(fig=fig)
+
+        cell2.__del__()
+
+    def plot_double_mem_pot(self):
+
+        self.import_data()
+
+        mem_axes_placement1 = [0.2, 0.6, 0.6, 0.3]
+        mem_axes_placement2 = [0.2, 0.2, 0.6, 0.3]
+        fig = plt.figure()
+
+        self.plotSim.plot_membrane_potential(
+            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement1)
+
+        self.z_rot = np.pi
+        self.update_sim_name()
+        self.import_data()
+
+        self.plotSim.plot_membrane_potential(
+            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement2)
+
+        fig.savefig(join(
+            self.save_folder, f'double_vmem_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'))
+        # plt.show()
+        plt.close(fig=fig)

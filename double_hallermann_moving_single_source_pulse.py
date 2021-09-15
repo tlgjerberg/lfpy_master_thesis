@@ -1,5 +1,5 @@
-from main import ExternalPotentialSim
-from plotting import PlotSimulations
+from main import ExternalPotentialSimulation
+from plotting import PlotSimulation
 from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_Hallermann_params)
 import numpy as np
@@ -38,38 +38,28 @@ def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim
     monophasic_pulse_params['positions'] = pos
     cellsim_Hallermann_params['z_rot'] = z
 
-    neuronSim = NeuronSimulation(
+    extPotSim = ExternalPotentialSimulation(
         cellsim_Hallermann_params, monophasic_pulse_params)
+    cell = extPotSim.return_cell(cell_models_folder)
     # sim_name = extPotSim.return_sim_name()
 
     if run_sim:
 
-        extPotSim.run_ext_sim(cell_models_folder, measure_coords, 20)
+        extPotSim.run_ext_sim(cell, measure_coords, 20)
     else:
         print("No simulation run")
 
     if plot_sim:
-        cell_vmem = np.load(
-            join(extPotSim.save_folder, sim_name + '_vmem.npy'))
-        cell_tvec = np.load(
-            join(extPotSim.save_folder, sim_name + '_tvec.npy'))
         z_rot = [np.pi, 0]
 
-        plotSim = PlotSimulations(
-            cellsim_Hallermann_params, monophasic_pulse_params, cell_vmem, cell_tvec)
-
-        plotSim.plot_double_morphology(
+        extPotSim.plot_double_morphology(
             cell_models_folder, z_rot, measure_coords)
     else:
         print("No plot generated")
 
     if z == 0 and plot_sim:
-        z_rot_len = len(extPotSim.cell_name) + len(f'{extPotSim.x_shift}') + 16
-        cell_vmem_rot = np.load(join(extPotSim.save_folder, sim_name[0:z_rot_len] +
-                                     f'{np.pi:.2f}' + sim_name[z_rot_len + 4:] + '_vmem.npy'))
-        cell_tvec_rot = np.load(join(extPotSim.save_folder, sim_name[0:z_rot_len] +
-                                     f'{np.pi:.2f}' + sim_name[z_rot_len + 4:] + '_tvec.npy'))
-        plotSim.plot_double_mem_pot(cell_vmem_rot, cell_tvec_rot)
+
+        extPotSim.plot_double_mem_pot()
 
 
 start = time.time()
@@ -84,7 +74,7 @@ for z in cell_rot:
                 continue
 
             run_double_hallermann(
-                cell_models_folder, measure_coordinates, I, pos, z, True, True)
+                cell_models_folder, measure_coordinates, I, pos, z, False, True)
             print("RANK %d doing task %d" % (RANK, task_idx))
 
 end = time.time()

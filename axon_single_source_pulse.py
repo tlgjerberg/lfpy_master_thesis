@@ -141,7 +141,7 @@ if RANK == 0:
     # Fitting the change in potential regular space as a power law
     fit_power(elec_dists, dV, (0, 0), powerlaw)
 
-    # Fitting the change in potential loglog space as a linear function
+    # Fitting the change in potential loglog space as a linear
     fit_linear(np.log(elec_dists), np.log(dV), linlaw)
 
 
