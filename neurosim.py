@@ -21,8 +21,6 @@ plt.rcParams.update(**font_params)
 class NeuronSimulation:
     def __init__(self, cell_params):
 
-        # self.extPotSim = ExternalPotentialSimulation(elec_params)
-        self.plotSim = PlotSimulation()
         self.root_folder = os.path.dirname(__file__)
         self.save_folder = join(
             self.root_folder, cell_params['save_folder_name'])
@@ -35,6 +33,8 @@ class NeuronSimulation:
         self.y_shift = cell_params['y_shift']
         self.y_rot = cell_params['y_rot']
         self.z_rot = cell_params['z_rot']  # Rotation around z-axis
+
+        self.plotSim = PlotSimulation(self.save_folder)
         self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}'
 
     def return_sim_name(self):

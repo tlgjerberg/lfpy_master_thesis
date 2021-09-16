@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
+from os.path import join
 
 font_params = {
     'font.size': 10,
@@ -14,10 +15,9 @@ plt.rcParams.update(**font_params)
 
 class Fitting:
 
-    def __init__(self, x, y):
+    def __init__(self, save_folder):
 
-        self.x = x
-        self.y = y
+        self.save_folder = save_folder
 
     def monoExp(self, x, m, t):
         return m * np.exp(-t * x)
@@ -28,17 +28,18 @@ class Fitting:
     def linlaw(self, x, m, t):
         return t * x + m
 
-    def curve_fit(self, fit_func="linlaw"):
+    def curve_fit(self, x, y, fit_name="linlaw"):
+
+        self.x, self.y = x, y
 
         fit_functions = {'linlaw': self.linlaw,
                          'monoExp': self.monoExp, 'powerlaw': self.powerlaw}
 
-        self.fit_func = fit_functions[fit_func]
+        self.fit_func = fit_functions[fit_name]
 
-        params, cv = scipy.optimize.curve_fit(
-            self.fit_func, x, y, p0)
+        params, cv = scipy.optimize.curve_fit(self.fit_func, self.x, self.y)
 
-        self.m, self.t = self.params
+        self.m, self.t = params
 
     def fit_measure(self):
         squaredDiffs = np.square(y - self.fit_func(x, m, t))
@@ -47,78 +48,28 @@ class Fitting:
         print(f"R² = {rSquared}")
 
     def print_fit_func(self):
-        if self.fit_func == linlaw:
+        if self.fit_func == self.linlaw:
             print(f"Y =  {t} * x + {m}")
-        elif self.fit_func == powerlaw:
+        elif self.fit_func == self.powerlaw:
             print(f"Y = {m} * x^({t})")
-        elif self.fit_func == monoExp:
+        elif self.fit_func == self.monoExp:
             print(f"Y = {m} * e^(-{t} * x)")
 
     def plot_curve(self):
 
-        if self.fit_func == linlaw:
+        if self.fit_func == self.linlaw:
             func_type = 'Linear'
-        elif self.fit_func == powerlaw:
-            func_type == 'Power'
-        elif self.fit_func == monoExp:
-            func_type == 'Exponential'
+        elif self.fit_func == self.powerlaw:
+            func_type = 'Power'
+        elif self.fit_func == self.monoExp:
+            func_type = 'Exponential'
 
         plt.figure()
-        plt.plot(x, y, '.', label="data")
-        plt.plot(x, self.fit_func(x, m, t), '--', label="fitted")
+        plt.plot(self.x, self.y, '.', label="data")
+        plt.plot(self.x, self.fit_func(
+            self.x, self.m, self.t), '--', label="fitted")
         plt.title(f"Fitted {func_type} Curve")
         plt.xlabel("r [$\mu m$]")
         plt.ylabel("dV [mV]")
 
-
-def fit_power(x, y, p0, fit_func):
-    # p0 = (0, 0)  # start with values near those we expect
-    params, cv = scipy.optimize.curve_fit(fit_func, x, y, p0)
-    m, t = params
-    sampleRate = 20_000  # Hz
-    tauSec = (1 / t) / sampleRate
-
-    squaredDiffs = np.square(y - fit_func(x, m, t))
-    squaredDiffsFromMean = np.square(y - np.mean(y))
-    rSquared = 1 - np.sum(squaredDiffs) / np.sum(squaredDiffsFromMean)
-    print(f"R² = {rSquared}")
-
-    # plot the results
-    plt.figure()
-    plt.plot(x, y, '.', label="data")
-    plt.plot(x, fit_func(x, m, t), '--', label="fitted")
-    plt.title("Fitted Power Curve")
-    plt.xlabel("r [$\mu m$]")
-    plt.ylabel("dV [mV]")
-    # plt.show()
-    plt.savefig('data/axon_bisc_dist_stim' + f'power_fit_{m} * x^({t}).png')
-    # inspect the parameters
-    print(f"Y = {m} * x^({t})")
-    print(f"Tau = {tauSec * 1e6} µs")
-
-
-def fit_linear(x, y, fit_func):
-    p0 = (10, 1.3)  # start with values near those we expect
-    params, cv = scipy.optimize.curve_fit(fit_func, x, y, p0)
-    m, t = params
-    sampleRate = 20_000  # Hz
-    tauSec = (1 / t) / sampleRate
-
-    squaredDiffs = np.square(y - fit_func(x, m, t))
-    squaredDiffsFromMean = np.square(y - np.mean(y))
-    rSquared = 1 - np.sum(squaredDiffs) / np.sum(squaredDiffsFromMean)
-    print(f"R² = {rSquared}")
-
-    # plot the results
-    plt.figure()
-    plt.plot(x, y, '.', label="data")
-    plt.plot(x, fit_func(x, m, t), '--', label="fitted")
-    plt.title("Fitted linear Curve")
-    plt.xlabel("log(r) [$\mu m$]")
-    plt.ylabel("log(dV) [mV]")
-    # plt.show()
-    plt.savefig('data/axon_bisc_dist_stim/' +
-                f'linear_fit_{t} * x + {m}_long.png')
-    # inspect the parameters
-    print(f"Y =  {t} * x + {m}")
-    print(f"Tau = {tauSec * 1e6} µs")
+        plt.savefig(join(self.save_folder, func_type + 'fit'))

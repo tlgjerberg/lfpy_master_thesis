@@ -1,8 +1,9 @@
-from main import ExternalPotentialSim
-from plotting import PlotSimulations
+from main import ExternalPotentialSimulation
+from plotting import PlotSimulation
+from fitting import Fitting
 from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_bisc_stick_params)
-from fitting import monoExp, powerlaw, linlaw, fit_exponential, fit_power, fit_linear
+# from fitting import monoExp, powerlaw, linlaw, fit_exponential, fit_power, fit_linear
 import numpy as np
 import neuron
 import matplotlib.pyplot as plt
@@ -66,6 +67,8 @@ elec_positions = np.array([[0, 0, -800],
 measure_coordinates = np.array(
     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
 
+# elec_positions = set_electrode_pos(measure_coordinates)
+
 
 def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_sim=False):
 
@@ -73,15 +76,13 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
     monophasic_pulse_params['positions'] = pos
     cellsim_bisc_stick_params['z_rot'] = z
 
-    extPotSim = ExternalPotentialSim(
+    extPotSim = ExternalPotentialSimulation(
         cellsim_bisc_stick_params, monophasic_pulse_params)
+    cell = extPotSim.return_cell(cell_models_folder)
 
     if run_sim:
 
-        cell = extPotSim.return_cell(cell_models_folder)
-        elec_positions = set_electrode_pos(measure_coordinates)
-
-        extPotSim.run_ext_sim(cell, cell_models_folder, measure_coordinates, z)
+        extPotSim.run_ext_sim(cell, measure_coords, z)
 
         v_ss = extPotSim.find_steady_state_pot(cell.vmem)
     else:
@@ -89,14 +90,14 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
 
     if plot_sim:
 
-        cell_tvec = np.load(
-            join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_tvec' + '.npy'))
-        cell_vmem = np.load(
-            join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_vmem' + '.npy'))
-        plotSim = PlotSimulations(
-            cellsim_bisc_stick_params, monophasic_pulse_params, cell_vmem, cell_tvec)
-        cell = plotSim.return_cell(cell_models_folder)
-        plotSim.plot_cellsim(
+        # cell_tvec = np.load(
+        #     join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_tvec' + '.npy'))
+        # cell_vmem = np.load(
+        #     join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_vmem' + '.npy'))
+        # plotSim = PlotSimulations(
+        #     cellsim_bisc_stick_params, monophasic_pulse_params, cell_vmem, cell_tvec)
+        # cell = plotSim.return_cell(cell_models_folder)
+        extPotSim.plot_cellsim(
             measure_coords, [0.05, 0.05, 0.3, 0.90], [-300, 300], [-1000, 1100])
 
     else:
@@ -121,28 +122,32 @@ for pos in elec_positions:
 
     print("RANK %d doing task %d" % (RANK, task_idx))
 
-# Gathering steady state membrane potential at root
+# Gathering steady state membrane potentials at root
 v_ss = COMM.gather(v_ss, root=0)
 
 if RANK == 0:
     assert v_ss[0] != None
-    # Trabsforming electrode positions into single array of distances
+    # Transforming electrode positions into single array of distances
     elec_positions = elec_positions[elec_positions != 0]
     elec_dists = elec_positions.ravel()
     elec_dists *= -1
 
-    plotSim = PlotSimulations(
+    extPotSim = ExternalPotentialSimulation(
         cellsim_bisc_stick_params, monophasic_pulse_params)
-    cell = plotSim.return_cell(cell_models_folder)
-    dV = plotSim.dV(v_ss)
+    cell = extPotSim.return_cell(cell_models_folder)
 
+    dV = extPotSim.dV(v_ss)
+    plotSim = PlotSimulation(extPotSim.save_folder)
     plotSim.plot_dV(elec_dists, dV)
 
     # Fitting the change in potential regular space as a power law
-    fit_power(elec_dists, dV, (0, 0), powerlaw)
+    fit = Fitting(extPotSim.save_folder)
+    fit.curve_fit(elec_dists, dV, "powerlaw")
+    fit.plot_curve()
 
     # Fitting the change in potential loglog space as a linear
-    fit_linear(np.log(elec_dists), np.log(dV), linlaw)
+    fit.curve_fit(np.log(elec_dists), np.log(dV), "linlaw")
+    fit.plot_curve()
 
 
 end = time.time()

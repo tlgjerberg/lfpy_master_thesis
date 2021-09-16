@@ -129,11 +129,11 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
-        v_max = self.max_mem_pot_dict(cell.vmem)
+        # v_max = self.max_mem_pot_dict(cell.vmem)
         self.export_data(cell)
 
         cell.__del__()
-        return v_max
+        # return v_max
 
     def plot_cellsim(self, cell_models_folder, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
         """

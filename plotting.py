@@ -22,9 +22,9 @@ plt.rcParams.update(**font_params)
 
 class PlotSimulation:
 
-    def __init__(self):
+    def __init__(self, save_folder):
 
-        self.placholder = None
+        self.save_folder = save_folder
 
     def plot_idxs(self, measure_pnts):
 
