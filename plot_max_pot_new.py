@@ -1,5 +1,6 @@
-from main import ExternalPotentialSim
-from plotting import PlotSimulations
+from neurosim import NeuronSimulation
+from main import ExternalPotentialSimulation
+from plotting import PlotSimulation
 from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_Hallermann_params)
 from comp_idx_to_sec import idx_to_sec_conversion
@@ -27,16 +28,26 @@ measure_coords = np.array(
     [[0, 0, 0], [-382, 85, 1100], [126, 89, 444], [127, 110, 859], [669, 61, -345]])
 
 
-def consolidate_v_max(segment, idx):
+def consolidate_v_max(sim_name, idx):
+    """
+    Loads a set of memembrane potential simulations and consolidates a list of
+    all maximum potentials.
+
+    Input:
+    segement: String giving the path to a set of simulation.
+    idx: index of the compartment of interest.
+
+    Returns:
+    vml: A list of maximum potentials.
+    """
 
     vmem_list = sorted(glob(
-        join('data/Hallermann_ext_stim/no_field', segment + '*_vmem.npy')))
+        join('data/Hallermann_ext_stim/no_field', sim_name + '*_vmem.npy')))
     vml = []
     for vmem in vmem_list:
         cell_vmem = np.load(vmem)
         v_max = np.max(cell_vmem[idx])
         vml.append(v_max)
-    print(vml)
     return vml
 
 
@@ -44,6 +55,7 @@ segments = ['Hallermann_x_shift=0_z_shift=0_z_rot=3.14_y_rot=0.00_elec_pos=-100'
             'Hallermann_x_shift=0_z_shift=0_z_rot=3.14_y_rot=0.00_elec_pos=-482',
             'Hallermann_x_shift=0_z_shift=0_z_rot=3.14_y_rot=0.00_elec_pos=226',
             'Hallermann_x_shift=0_z_shift=0_z_rot=3.14_y_rot=0.00_elec_pos=669']
+
 idx = [0, 471, 104, 125, 42]
 
 v_max_list = []
@@ -53,19 +65,17 @@ for i in range(len(segments)):
     v_max_list.append(vml)
 
 
-plotSim = PlotSimulations(
-    cellsim_Hallermann_params, monophasic_pulse_params)
-cell = plotSim.return_cell(cell_models_folder)
-plotSim.create_measure_points(cell, measure_coords)
-plotSim.xlim = [-500, 500]
-plotSim.ylim = [-300, 1200]
-plotSim.cell_plot_idxs = plotSim.measure_pnts.astype(
-    dtype='int')  # List of measurement points
+neurosim = NeuronSimulation(cellsim_Hallermann_params)
+cell = neurosim.return_cell(cell_models_folder)
+neurosim.create_measure_points(cell, measure_coords)
+plotSim = PlotSimulation(save_folder)
+xlim = [-500, 500]
+ylim = [-300, 1200]
+plotSim.plot_idxs(neurosim.measure_pnts)
 
-plotSim.cell_plot_colors = {idx: [
-    'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(plotSim.cell_plot_idxs)}
+# Plotting
 fig = plt.figure(figsize=[12, 6])
-plotSim.plot_morphology(cell, fig, [0.05, 0.1, 0.3, 0.9])
+plotSim.plot_morphology(cell, fig, xlim, ylim, [0.05, 0.1, 0.3, 0.9])
 ax = fig.add_axes([0.45, 0.225, 0.5, 0.6])
 color_list = ['b', 'cyan', 'orange', 'purple', 'green']
 for c, vm in enumerate(v_max_list):

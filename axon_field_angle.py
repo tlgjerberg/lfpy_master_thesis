@@ -30,7 +30,7 @@ def run_axon_angle(cell_models_folder, measure_coords, I, pos, run_sim=False, pl
 
     extPotSim = ExternalPotentialSim(
         cellsim_bisc_stick_params, monophasic_pulse_params)
-    extPotSim.return_sim_name()
+    cell = extPotSim.return_cell()
 
     if run_sim:
         elec_positions = set_electrode_pos(measure_coords)
