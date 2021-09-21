@@ -10,6 +10,7 @@ import matplotlib
 from mpl_toolkits import mplot3d
 # matplotlib.use("AGG")
 
+plt.style.use('bmh')
 font_params = {
     'font.size': 10,
     'axes.labelsize': 16,
@@ -24,7 +25,9 @@ class PlotSimulation:
 
     def __init__(self, save_folder):
 
+        # , compart_idx_dict
         self.save_folder = save_folder
+        # self.compart_idx_dict = compart_idx_dict
 
     def plot_idxs(self, measure_pnts):
 
@@ -35,6 +38,17 @@ class PlotSimulation:
         # Marking the compartments of measurement with individual colors
         self.cell_plot_colors = {idx: [
             'b', 'cyan', 'orange', 'green', 'purple', 'yellow'][num] for num, idx in enumerate(self.cell_plot_idxs)}
+
+    def add_legend(self, compart_idx_dict):
+
+        self.legend_list = []
+
+        print(self.cell_plot_idxs)
+        print(compart_idx_dict)
+
+        for i in self.cell_plot_idxs:
+
+            self.legend_list.append(f'{compart_idx_dict[str(i)]}')
 
     def plot_morphology(self, cell, fig, xlim, ylim, morph_ax_params=[0.1, 0.1, 0.9, 0.9]):
         """Plots the morphology of a cell model with separate colors for each
@@ -213,11 +227,8 @@ class PlotSimulation:
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
         [ax_vm.plot(tvec, vmem[idx],
                     c=self.cell_plot_colors[idx], lw=2) for idx in self.cell_plot_idxs]
-        # if save:
-        #     plt.legend([f'Compartment {self.measure_pnts[0]}',
-        #                 f'Compartment {self.measure_pnts[1]}', f'Compartment {self.measure_pnts[2]}'])
-        #     plt.savefig(
-        #         join(self.save_folder, 'mem_pot_' + self.sim_name + '.png'), dpi=300)
+        print(self.legend_list)
+        ax_vm.legend(self.legend_list)
 
     def plot_current_pulse(self, fig, tvec, pulse, tstop, placement):
         """Plots the current pulse used to set up the stimulating electrical

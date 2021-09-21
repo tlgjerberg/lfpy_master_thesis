@@ -126,7 +126,6 @@ class ExternalPotentialSimulation(NeuronSimulation):
         # print(cell.allsecnames)
         self.create_measure_points(cell, comp_coords)
         # self.print_measure_points(cell)
-
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
         # v_max = self.max_mem_pot_dict(cell.vmem)
@@ -159,7 +158,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
         fig.subplots_adjust(hspace=0.5, left=0.5, wspace=0.5, right=0.96,
                             top=0.9, bottom=0.1)
 
-        self.plot_idxs()
+        self.plotSim.plot_idxs(self.measure_pnts)
 
         # Adding morphology to figure
         self.plotSim.plot_morphology(
@@ -182,7 +181,8 @@ class ExternalPotentialSimulation(NeuronSimulation):
         mem_axes_placement = [ax_left, ax_top - ax_h - 0.47, ax_w, ax_h]
 
         # Adding mambrane potential, current pulse and electrode to combined figure
-
+        self.find_secnames(cell)
+        self.plotSim.add_legend(self.sec_names)
         self.plotSim.plot_membrane_potential(
             fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement)
 
