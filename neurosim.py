@@ -1,5 +1,5 @@
 from plotting import PlotSimulation
-
+from glob import glob
 import numpy as np
 import neuron
 import LFPy
@@ -142,6 +142,23 @@ class NeuronSimulation:
 
         self.measure_pnts = np.array(measure_pnts)
 
+    def find_secnames(self, cell):
+        """
+        Finds the name of a section matching each measurement compartment and
+        adds both to a dictionary as a value and key pair.
+
+        Input:
+        cell: LFPy Cell object
+        """
+
+        self.sec_names = {}
+
+        for mp in self.measure_pnts:
+
+            idx, secname, _ = cell.get_idx_name(mp)
+
+            self.sec_names[f'{idx}'] = secname
+
     def print_measure_points(self, cell):
         """Outputs the compartment name and coordinates of the set of
         record compartments"""
@@ -183,6 +200,10 @@ class NeuronSimulation:
         Exports arrays of time array, membrane potential and currents of a cells
         simulation to .npy files.
 
+        Input:
+        cell: LFPy Cell object
+        Bool: vmem: Arguement to export membrane potential file
+        Bool: imem: Arguement to export transmembrane current file
         """
 
         # Create save folder if it does not exist
@@ -202,6 +223,13 @@ class NeuronSimulation:
             np.save(join(self.save_folder, f'{file_name}_imem'), cell.imem)
 
     def import_data(self, vmem=True, imem=False):
+        """
+        Imports data from simulations saved to file
+
+        Input:
+        Bool: vmem: Arguement to import membrane potential file
+        Bool: imem: Arguement to import transmembrane current file
+        """
 
         file_name = self._sim_name
         print(file_name)
@@ -215,7 +243,8 @@ class NeuronSimulation:
             print(self.cell_tvec[10])
 
         else:
-            print('File not found!')
+            print('File not found. Run Simulation!')
+            raise FileNotFoundError
 
         if vmem and isfile(vfile):
             self.cell_vmem = np.load(vfile)
@@ -225,8 +254,11 @@ class NeuronSimulation:
 
     def max_mem_pot_dict(self, cell_vmem):
         """ Returns a dictionary with the maximum membrane potential at each
-        recorded compartment chosen as a measurement point. """
+        recorded compartment chosen as a measurement point.
 
+        Input:
+        Array: Cell membrane potential recordings
+        """
         v_max = {}
 
         for mp in self.measure_pnts:
@@ -234,6 +266,36 @@ class NeuronSimulation:
             v_max[f'{mp}'] = np.max(cell_vmem[mp])
 
         return v_max
+
+    def consolidate_v_max(self, sim_name, idx):
+        """
+        Loads a set of memembrane potential simulations and consolidates a list of
+        all maximum potentials.
+
+        Input:
+        segement: String giving the path to a set of simulation.
+        idx: index of the compartment of interest.
+
+        Returns:
+        vml: A list of maximum potentials.
+        """
+
+        vmem_list = sorted(glob(
+            join(self.save_folder, sim_name + '*_vmem.npy')))
+
+        if vmem_list:
+            print('Files found')
+
+        else:
+            raise FileNotFoundError
+
+        vml = []
+        for vmem in vmem_list:
+            cell_vmem = np.load(vmem)
+            v_max = np.max(cell_vmem[idx])
+            vml.append(v_max)
+
+        return vml
 
     def run_current_sim(self, cell_models_folder, comp_coords, passive=False):
         cell = self.return_cell(cell_models_folder)
