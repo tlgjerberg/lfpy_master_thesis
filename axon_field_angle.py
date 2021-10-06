@@ -1,5 +1,5 @@
-from main import ExternalPotentialSim
-from plotting import PlotSimulations
+from main import ExternalPotentialSimulation
+from plotting import PlotSimulation
 from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_bisc_stick_params)
 import numpy as np
@@ -25,67 +25,72 @@ def run_axon_angle(cell_models_folder, measure_coords, I, pos, run_sim=False, pl
 
     monophasic_pulse_params['pulse_amp'] = I
     monophasic_pulse_params['positions'] = pos
+    monophasic_pulse_params['stop_time'] = 10.0
     cellsim_bisc_stick_params['cell_dist_to_top'] = -500
-    cellsim_bisc_stick_params['tstop'] = 20
 
-    extPotSim = ExternalPotentialSim(
+    extPotSim = ExternalPotentialSimulation(
         cellsim_bisc_stick_params, monophasic_pulse_params)
-    cell = extPotSim.return_cell()
+    cell = extPotSim.return_cell(cell_models_folder)
+
+    dV_pot_dict = None
 
     if run_sim:
-        elec_positions = set_electrode_pos(measure_coords)
-        cell = extPotSim.return_cell(cell_models_folder)
-        v_max = extPotSim.run_ext_sim(cell, cell_models_folder, measure_coords)
 
-        print(pos)
-        print(v_max)
+        elec_positions = set_electrode_pos(measure_coords)
+        extPotSim.run_ext_sim(cell, measure_coords)
+        dV_pot_dict = extPotSim.dV_pot_dict(cell.vmem)
+
+        return dV_pot_dict
 
     else:
         print('No simulation run!')
 
     if plot_sim:
 
-        cell_tvec = np.load(
-            join(extPotSim.save_folder, extPotSim.sim_name + '_tvec.npy'))
-        cell_vmem = np.load(
-            join(extPotSim.save_folder, extPotSim.sim_name + '_vmem.npy'))
-
-        plotSim = PlotSimulations(
-            cellsim_bisc_stick_params, monophasic_pulse_params, cell_vmem, cell_tvec)
-        cell = plotSim.return_cell(cell_models_folder)
-        plotSim.plot_cellsim_angle(
-            measure_coords, [0, 0, 1, 1], field=True)
+        extPotSim.import_data()
+        extPotSim.create_measure_points(cell, measure_coords)
+        extPotSim.print_measure_points(cell)
+        plotSim = PlotSimulation(extPotSim.save_folder)
         fig = plt.figure()
-        plotSim.plot_membrane_potential(fig, save=True)
+        plotSim.plot_idxs(extPotSim.measure_pnts)
+        plotSim.legend_list = ['Compartment 24',
+                               'Compartment 0', 'Compartment 48']
+        plotSim.plot_membrane_potential(
+            fig, extPotSim.cell_tvec, extPotSim.cell_vmem, extPotSim.tstop)
+
+        sim_name = extPotSim.return_sim_name()
+        fig.savefig(join(extPotSim.save_folder,
+                         f'mem_pot_{sim_name}.png'), dpi=300)
+        fig_morph = plt.figure()
+        plotSim.plot_morphology(cell, fig_morph, [-100, 2000], [-2000, 2000])
+        plotSim.draw_electrode(extPotSim.x0, extPotSim.y0,
+                               extPotSim.z0, extPotSim.electrode_radii)
+        plt.show()
     else:
         print('No plots generated!')
 
     # return v_max
 
 
-measure_coords = np.array([[0, 0, -10], [0, 0, -500], [0, 0, 500]])
+measure_coords = np.array([[0, 0, -500], [0, 0, 0], [0, 0, 500]])
 
 
-elec_positions = np.array([[2010, 0, -5],
-                           [2010 * np.cos(np.pi / 4), 0, -5 +
-                            2010 * np.sin(np.pi / 4)],
-                           [2010 * np.cos(np.pi / 3), 0, -5 +
-                            2010 * np.sin(np.pi / 3)],
-                           [2010 * np.cos(np.pi / 6), 0, -5 +
-                            2010 * np.sin(np.pi / 6)],
-                           [2010 * np.cos(np.pi / 2), 0, -5 +
-                            2010 * np.sin(np.pi / 2)],
-                           [2010 * np.cos(3 * np.pi / 2), 0, -5 +
-                            2010 * np.sin(3 * np.pi / 2)],
-                           [2010 * np.cos(7 * np.pi / 4), 0, -5 +
-                            2010 * np.sin(7 * np.pi / 4)]], dtype=float)
+elec_positions = np.array([[2000, 0, 0],
+                           [2000 * np.cos(np.pi / 4), 0, 2000 *
+                            np.sin(np.pi / 4)],
+                           [2000 * np.cos(np.pi / 3), 0, 2000 *
+                            np.sin(np.pi / 3)],
+                           [2000 * np.cos(np.pi / 6), 0, 2000 *
+                            np.sin(np.pi / 6)],
+                           [2000 * np.cos(np.pi / 2), 0, 2000 *
+                            np.sin(np.pi / 2)],
+                           [2000 * np.cos(3 * np.pi / 2), 0,
+                            2000 * np.sin(3 * np.pi / 2)],
+                           [2000 * np.cos(7 * np.pi / 4), 0,
+                            2000 * np.sin(7 * np.pi / 4)],
+                           [0, 0, 2000]], dtype=float)
 
-# measure_keys = ['0', '25', '48']
-# value = []
-
-# v_max_sorted = {key: list(value) for key in measure_keys}
-# print(v_max_sorted)
-v_max = None
+dV_pot_dict = None
 I = -5e4  # uA
 
 task_idx = -1
@@ -95,19 +100,20 @@ for pos in elec_positions:
     if not divmod(task_idx, SIZE)[1] == RANK:
         continue
 
-    v_max = run_axon_angle(
+    dV_pot_dict = run_axon_angle(
         cell_models_folder, measure_coords, I, pos, True, False)
+    print('Electrode position: ', pos)
+    print('maximum potential: ', dV_pot_dict)
 
     print("RANK %d doing task %d" % (RANK, task_idx))
 
-# print('v_max', v_max)
-# print(v_max_sorted)
+
 # if v_max is not None:
 #     print(f'RANK {RANK} has reached gather')
 #     v_max_top = COMM.gather(v_max['0'], root=0)
-#     v_max_mid = COMM.gather(v_max['25'], root=0)
+#     v_max_mid = COMM.gather(v_max['24'], root=0)
 #     v_max_bot = COMM.gather(v_max['48'], root=0)
-# #
+#
 # if RANK == 0:
 #     print(v_max_top)
 #     v_max_top_cons = sorted(list(flatten(v_max_top)), reverse=True)
@@ -116,29 +122,3 @@ for pos in elec_positions:
 #     v_max_list = [v_max_top_cons, v_max_mid_cons, v_max_bot_cons]
 #     radians = [0, np.pi / 6, np.pi / 4, np.pi / 3, np.pi / 2]
 #     radians_sorted = sorted(radians)
-#
-#     plotSim = PlotSimulations(
-#         cellsim_Hallermann_params, monophasic_pulse_params)
-#     cell = plotSim.return_cell(cell_models_folder)
-#     plotSim.create_measure_points(cell, measure_coords)
-#     plotSim.xlim = [-1050, 1050]
-#     plotSim.ylim = [-1200, 800]
-#     plotSim.cell_plot_idxs = plotSim.measure_pnts.astype(
-#         dtype='int')  # List of measurement points
-#
-#     plotSim.cell_plot_colors = {idx: [
-#         'b', 'cyan', 'orange', 'green', 'purple'][num] for num, idx in enumerate(plotSim.cell_plot_idxs)}
-#     fig = plt.figure(figsize=[12, 6])
-#     plotSim.plot_morphology(cell, fig, [0.05, 0.1, 0.3, 0.9])
-#
-#     ax = fig.add_axes([0.45, 0.225, 0.5, 0.6])
-#     color_list = ['b', 'cyan', 'orange', 'green', 'purple']
-#     for c, vm in enumerate(v_max_list):
-#         ax.plot(current_amps_sorted, vm, 'o-', c=color_list[c])
-#
-#     plt.xlabel('Electode Current Amplitude ($\mu A$)')
-#     plt.ylabel('Membrane Potential (mV)')
-#     plt.legend(['Soma', 'Apical Dendrite', 'Axon Terminal', 'Axon'])
-#     plt.show()
-#     fig.savefig(join(extPotSim.save_folder,
-#                      f'v_max_current_x_shift={x_shift}_z_shift={z_shift}_z_rot={z_rot}.png'))

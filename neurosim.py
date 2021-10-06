@@ -45,8 +45,8 @@ class NeuronSimulation:
     def return_cell(self, cell_models_folder):
         """Creates a LFPy cell object from a cell model"""
 
-        self.cell_models_folder = cell_models_folder
         if self.cell_name == 'axon':
+
             model_path = join(cell_models_folder, 'unmyelinated_axon.hoc')
 
             cell_parameters = {
@@ -65,10 +65,12 @@ class NeuronSimulation:
             cell = LFPy.Cell(**cell_parameters)
             cell.set_rotation(x=0, y=self.y_rot, z=self.z_rot)
             cell.set_pos(x=self.x_shift, y=self.y_shift,
-                         z=self.cell_dist_to_top)
+                         z=self.cell_dist_to_top - cell.z[0][0])
+
             return cell
 
         elif self.cell_name == 'Hallermann':
+
             model_path = join(cell_models_folder, 'HallermannEtAl2012')
 
             neuron.load_mechanisms(model_path)
@@ -240,7 +242,6 @@ class NeuronSimulation:
 
         if isfile(tfile):
             self.cell_tvec = np.load(tfile)
-            print(self.cell_tvec[10])
 
         else:
             print('File not found. Run Simulation!')
