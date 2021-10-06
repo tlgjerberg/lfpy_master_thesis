@@ -40,11 +40,15 @@ class PlotSimulation:
             'b', 'cyan', 'orange', 'green', 'purple', 'yellow'][num] for num, idx in enumerate(self.cell_plot_idxs)}
 
     def add_legend(self, compart_idx_dict):
+        """
+        Create a list legends. One for each compartment measured.
+
+        Input:
+
+        Dict: dictionary of compartment index as key and the section name as value
+        """
 
         self.legend_list = []
-
-        print(self.cell_plot_idxs)
-        print(compart_idx_dict)
 
         for i in self.cell_plot_idxs:
 
@@ -99,10 +103,10 @@ class PlotSimulation:
         self.ax_m.legend(lines, used_clrs, frameon=False,
                          fontsize=8, loc=(0.05, 0.0), ncol=2)
 
-        # Plotting dots at the middle of a given section in its given color
-        [self.ax_m.plot(cell.x.mean(axis=1)[idx], cell.z.mean(axis=1)[idx], 'o',
-                        c=self.cell_plot_colors[idx], ms=7) for idx in self.cell_plot_idxs]
-        # plt.show()
+        if hasattr(self, "cell_plot_idxs") and hasattr(self, "cell_plot_colors"):
+            # Plotting dots at the middle of a given section in its given color
+            [self.ax_m.plot(cell.x.mean(axis=1)[idx], cell.z.mean(axis=1)[idx], 'o',
+                            c=self.cell_plot_colors[idx], ms=7) for idx in self.cell_plot_idxs]
 
     def morphology_3D(self, cell):
         """Plots a cell morphology in a 3D representation."""
@@ -171,8 +175,8 @@ class PlotSimulation:
         """Adds a point representing an electrode."""
 
         ellipse_pos = [x, z]
-        self.ax_m.add_artist(Ellipse(ellipse_pos, width=10 * electrode_radii,
-                                     height=10 * electrode_radii, fc='gray', ec='black'))
+        self.ax_m.add_artist(Ellipse(ellipse_pos, width=20 * electrode_radii,
+                                     height=20 * electrode_radii, fc='gray', ec='black'))
 
     def plot_external_field(self, cell, fig, cb=False):
         """Plots a representation of the extracellular field around an
@@ -215,7 +219,7 @@ class PlotSimulation:
         # Add colorbar corresonding to field strength in mV
         fig.colorbar(self.ext_field_im, pad=0.05, ax=self.ax_m, cax=cax)
 
-    def plot_membrane_potential(self, fig, tvec, vmem, tstop, placement=[0.17, 0.11, .7, .8], save=False):
+    def plot_membrane_potential(self, fig, tvec, vmem, tstop, placement=[0.17, 0.11, .7, .8], leg=True):
         """Plots the change in membrane potential over time corresponding to
         each compartment marked as a measurement point."""
 
@@ -227,8 +231,8 @@ class PlotSimulation:
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
         [ax_vm.plot(tvec, vmem[idx],
                     c=self.cell_plot_colors[idx], lw=2) for idx in self.cell_plot_idxs]
-        print(self.legend_list)
-        ax_vm.legend(self.legend_list)
+        if leg:
+            ax_vm.legend(self.legend_list)
 
     def plot_current_pulse(self, fig, tvec, pulse, tstop, placement):
         """Plots the current pulse used to set up the stimulating electrical
