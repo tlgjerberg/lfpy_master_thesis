@@ -91,20 +91,33 @@ class ExternalPotentialSimulation(NeuronSimulation):
         """ Returns the change in potential dV computed from the steady state
             potential.
 
-        Input: An array containing the steady state potentials from a set of
+        Input: A 1-D array containing the steady state potentials from a set of
                simulations
 
-        Returns: 1-D array of change in potential
+        Returns: 1-D array of change in potential dV
         """
 
-        # Flattens array of steady state potentials
-        v_ss = [i for i in v_ss if i]
+        dV = np.zeros(len(v_ss))  # dV array
 
-        dV = np.zeros(len(v_ss))
-
+        # Compute dV for each potential steady state
         for v in range(len(v_ss)):
             dV[v] = v_ss[v] - self.v_init
         return dV
+
+    def dV_pot_dict(self, cell_vmem):
+        """ Returns a dictionary with the maximum membrane potential at each
+        recorded compartment chosen as a measurement point.
+
+        Input:
+        Array: Cell membrane potential recordings
+        """
+        dV_pot_dict = {}
+
+        for mp in self.measure_pnts:
+
+            dV_pot_dict[f'{mp}'] = np.max(cell_vmem[mp]) - self.v_init
+
+        return dV_pot_dict
 
     def return_dist_to_electrode(self, com_coords):
 
@@ -128,7 +141,6 @@ class ExternalPotentialSimulation(NeuronSimulation):
         # self.print_measure_points(cell)
         self.extracellular_stimuli(cell)
         self.run_cell_simulation(cell)
-        # v_max = self.max_mem_pot_dict(cell.vmem)
         self.export_data(cell)
 
         cell.__del__()
@@ -206,7 +218,9 @@ class ExternalPotentialSimulation(NeuronSimulation):
     def plot_double_morphology(self, cell_models_folder, z_rot, msre_coords, xlim=[-760, 760], ylim=[-500, 1200]):
         """Plots two mrophologies next to each other with an electrode
         representation placed at the same point between them at both morphology
-        plots."""
+        plots.
+
+        """
 
         self.xlim = xlim
         self.ylim = ylim
@@ -248,8 +262,8 @@ class ExternalPotentialSimulation(NeuronSimulation):
             os.makedirs(self.save_folder)
 
         fig.savefig(join(
-            self.save_folder, f'double_hallermann_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'))
-        # plt.show()
+            self.save_folder, f'double_hallermann_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'), dpi=300)
+        plt.show()
         plt.close(fig=fig)
 
         cell2.__del__()
@@ -263,16 +277,16 @@ class ExternalPotentialSimulation(NeuronSimulation):
         fig = plt.figure()
 
         self.plotSim.plot_membrane_potential(
-            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement1)
+            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement1, False)
 
         self.z_rot = np.pi
         self.update_sim_name()
         self.import_data()
 
         self.plotSim.plot_membrane_potential(
-            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement2)
+            fig, self.cell_tvec, self.cell_vmem, self.tstop, mem_axes_placement2, False)
 
         fig.savefig(join(
-            self.save_folder, f'double_vmem_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'))
+            self.save_folder, f'double_vmem_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'), dpi=300)
         # plt.show()
         plt.close(fig=fig)
