@@ -74,15 +74,17 @@ batch.
 start_time = time.time()
 
 # Create a save folder for data if one does not exist
+
 save_folder = 'data/morphology_search/'
-if not os.path.isdir(save_folder):
-    os.makedirs(save_folder)
 
 """
 Extract cell models from Blue Brain directory and sort all cells of the same
 type into chunks.
 """
 if RANK == 0:
+
+    if not os.path.isdir(save_folder):
+        os.makedirs(save_folder)
 
     zip_dir = 'hoc_combos_syn.1_0_10.allzips'
     target_dir = 'hoc_combos_syn.1_0_10.unzipped'
@@ -101,15 +103,17 @@ neuron_chunks = COMM.scatter(neuron_chunks, root=0)
 
 """
 
-show_morph = True
-show_cell_hist = True
+save_morph = True
+save_cell_hist = True
 
 cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths
+cortex_height = 2082  # The total height of the rat cortex in the Blue Brain database
 
-terminal_depths = []  # List of axon terminal depths corresonding to indices
 
+def count_axon_terminals(neuron_chunks, cell_depths, cortex_height):
 
-def count_axon_terminals(neuron_chunks):
+    terminal_depths = []  # List of axon terminal depths corresonding to indices
+
     neuron_variants_counter = 0
 
     # Looping through each set/chunk of neurons and counting the axon terminals
@@ -143,7 +147,7 @@ def count_axon_terminals(neuron_chunks):
                     extreme_idx = cell.get_idx(section=secname)[-1]
 
                     # Skip neurons of depths where a neurite falls outside cortex
-                    if cell.z[extreme_idx][-1] < 0 or cell.z[extreme_idx][-1] > 2082:
+                    if cell.z[extreme_idx][-1] < 0 or cell.z[extreme_idx][-1] > cortex_height:
                         continue
 
                     # Test if section is part of an axon
@@ -166,7 +170,7 @@ def count_axon_terminals(neuron_chunks):
                         #       'z_pos: ', cell.z[terminal_idx].mean(axis=0))
 
             # Plotting morphology of each cell variant
-            if show_morph:
+            if save_morph:
                 fig = plt.figure()
                 ax1 = fig.add_subplot(111)
                 ax1.invert_yaxis()
@@ -174,33 +178,35 @@ def count_axon_terminals(neuron_chunks):
                 ax1.plot(cell.x[axon_terminals].mean(axis=1),
                          cell.z[axon_terminals].mean(axis=1), 'y*')
                 # ax1.set_ylim(cell.z.T[-1], cell.z.T[0])
+                ax1.set_xlabel('x[$\mu m$]')
+                ax1.set_ylabel('y[$\mu m$]')
 
                 plt.savefig(
-                    join(save_folder, f"{morph_name}_morphology_depth{z}.png"))
+                    join(save_folder, f"{morph_name}_morphology_depth.png"), dpi=300)
 
             return axon_terminals, terminal_depths
 
 
 axon_terminals, terminal_depths = count_axon_terminals(neuron_chunks)
-hist_name = nrn[31:-2]  # Name of neuron type
+hist_name = neuron_chunks[0][31:-2]  # Name of neuron type
+num_bins = 1000
 # Changing terminal depths to shift z-axis to be positive downwards
 terminal_depths = np.array(terminal_depths)
-# terminal_depths *= -1.
 
 # Weights to scale each bin by number of cell variants
 const_weights = (1. / len(neuron_chunks)) * np.ones(len(terminal_depths))
 
 # Creating a histogram of axon terminal depths for each neuron type
-if show_cell_hist:
+if save_cell_hist:
     plt.figure()
-    plt.hist(terminal_depths, bins=1000,
-             weights=const_weights, orientation='horizontal')
+    plt.hist(terminal_depths, bins=num_bins,
+             density=True, orientation='horizontal')
     ax = plt.gca()
     ax.invert_yaxis()
     plt.xlabel('# of terminals')
     plt.ylabel('Layer depth [$\mu m$]')
     plt.savefig(
-        join(save_folder, f"layer_terminal_dist_histogram_{hist_name}.png"))
+        join(save_folder, f"layer_terminal_dist_histogram_{hist_name}_bins_{num_bins}.png"), dpi=300)
 
 # Sending length of all terminal_depths arrays to root
 sendcounts = np.array(COMM.gather(len(terminal_depths), root=0))
@@ -214,17 +220,19 @@ else:
 COMM.Gatherv(terminal_depths, (terminal_depths_layer, sendcounts), root=0)
 
 if RANK == 0:
-    print(f'# of terminals in {nrn[31:-2]}', len(terminal_depths_layer))
+    print(f'# of terminals in layer {hist_name[0:2]}', len(
+        terminal_depths_layer))
     plt.figure()
     # plt.hist(terminal_depths, bins=100,
     #          weights=const_weights, orientation='horizontal')
-    plt.hist(terminal_depths, bins=1000, orientation='horizontal')
+    plt.hist(terminal_depths_layer, bins=num_bins,
+             orientation='horizontal', density=True)
     ax = plt.gca()
     ax.invert_yaxis()
     plt.xlabel('# of terminals')
     plt.ylabel('Layer depth [$\mu m$]')
     plt.savefig(
-        join(save_folder, f"layer_terminal_dist_histogram_{nrn[31:-2]}.png"))
+        join(save_folder, f"layer_terminal_dist_histogram_{hist_name[0:2]}_bins_{num_bins}.png"), dpi=300)
 
 end_time = time.time()
 print(f'RANK: {RANK}. Time to execute: {end_time - start_time} seconds')
