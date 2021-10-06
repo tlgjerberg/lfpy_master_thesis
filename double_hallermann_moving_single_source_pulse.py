@@ -46,6 +46,8 @@ def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim
     if run_sim:
 
         extPotSim.run_ext_sim(cell, measure_coords, 20)
+        # extPotSim.print_measure_points(cell)
+
     else:
         print("No simulation run")
 
@@ -74,7 +76,7 @@ for z in cell_rot:
                 continue
 
             run_double_hallermann(
-                cell_models_folder, measure_coordinates, I, pos, z, False, True)
+                cell_models_folder, measure_coordinates, I, pos, z, True, False)
             print("RANK %d doing task %d" % (RANK, task_idx))
 
 end = time.time()

@@ -31,31 +31,22 @@ Improve plot_cellsim_alt for easy reading and page formatting.
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 cellsim_bisc_stick_params['save_folder_name'] = 'data/axon_bisc_dist_stim'
 
-# elec_positions = np.array([[0, 0, -50],
-#                            [0, 0, -100],
-#                            [0, 0, -200],
-#                            [0, 0, -400],
-#                            [0, 0, -800],
-#                            [0, 0, -1600],
-#                            [0, 0, -3200]], dtype=float)
 
-# elec_positions = np.array([[0, 0, -200],
-#                            [0, 0, -400],
-#                            [0, 0, -800],
-#                            [0, 0, -1600],
-#                            [0, 0, -3200],
-#                            [0, 0, -6400],
-#                            [0, 0, -12800]], dtype=float)
+elec_positions = np.array([[0, 0, -50],
+                           [0, 0, -100],
+                           [0, 0, -200],
+                           [0, 0, -400],
+                           [0, 0, -800],
+                           [0, 0, -1600],
+                           [0, 0, -3200],
+                           [0, 0, -6400],
+                           [0, 0, -12800]], dtype=float)
 
-# elec_positions = np.array([[0, 0, -50],
-#                            [0, 0, -100],
-#                            [0, 0, -200],
-#                            [0, 0, -400],
-#                            [0, 0, -800],
-#                            [0, 0, -1600],
-#                            [0, 0, -3200],
-#                            [0, 0, -6400],
-#                            [0, 0, -12800]], dtype=float)
+elec_positions = np.array([[0, 0, -50],
+                           [0, 0, -100],
+                           [0, 0, -200],
+                           [0, 0, -400],
+                           [0, 0, -800]], dtype=float)
 
 elec_positions = np.array([[0, 0, -800],
                            [0, 0, -1600],
@@ -79,10 +70,11 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
     extPotSim = ExternalPotentialSimulation(
         cellsim_bisc_stick_params, monophasic_pulse_params)
     cell = extPotSim.return_cell(cell_models_folder)
+    v_ss = None
 
     if run_sim:
 
-        extPotSim.run_ext_sim(cell, measure_coords, z)
+        extPotSim.run_ext_sim(cell, measure_coords)
 
         v_ss = extPotSim.find_steady_state_pot(cell.vmem)
     else:
@@ -90,15 +82,10 @@ def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_
 
     if plot_sim:
 
-        # cell_tvec = np.load(
-        #     join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_tvec' + '.npy'))
-        # cell_vmem = np.load(
-        #     join(extPotSim.save_folder, f'axon_x_shift=0_z_rot={z:.2f}_{I}mA_elec_pos={pos[0]}_{pos[1]}_{pos[2]}_vmem' + '.npy'))
-        # plotSim = PlotSimulations(
-        #     cellsim_bisc_stick_params, monophasic_pulse_params, cell_vmem, cell_tvec)
-        # cell = plotSim.return_cell(cell_models_folder)
-        extPotSim.plot_cellsim(
-            measure_coords, [0.05, 0.05, 0.3, 0.90], [-300, 300], [-1000, 1100])
+        extPotSim.plot_cellsim(cell_models_folder,
+                               measure_coords,
+                               [0.05, 0.05, 0.3, 0.90],
+                               [-300, 300], [-1000, 1100])
 
     else:
         print('No plots generated!')
@@ -136,6 +123,8 @@ if RANK == 0:
         cellsim_bisc_stick_params, monophasic_pulse_params)
     cell = extPotSim.return_cell(cell_models_folder)
 
+    # Flattens array of steady state potentials
+    v_ss = [i for i in v_ss if i]
     dV = extPotSim.dV(v_ss)
     plotSim = PlotSimulation(extPotSim.save_folder)
     plotSim.plot_dV(elec_dists, dV)
@@ -144,10 +133,12 @@ if RANK == 0:
     fit = Fitting(extPotSim.save_folder)
     fit.curve_fit(elec_dists, dV, "powerlaw")
     fit.plot_curve()
+    fit.fit_measure()
 
     # Fitting the change in potential loglog space as a linear
     fit.curve_fit(np.log(elec_dists), np.log(dV), "linlaw")
     fit.plot_curve()
+    fit.fit_measure()
 
 
 end = time.time()

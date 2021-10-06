@@ -18,29 +18,35 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-x_shift = -100
-z_shift = 0
-# x_shift = -30
-# z_shift = 40
-# x_shift = -40
-# z_shift = 30
+
+# x_shift = 50
+# z_shift = 0
+# x_shift = -50
+# z_shift = 0
+# x_shift = 0
+# z_shift = 50
+# x_shift = -100
+# z_shift = 0
 # x_shift = 100
 # z_shift = 0
 # x_shift = 0
 # z_shift = 100
 
-
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field'
+cellsim_Hallermann_params[
+    'save_folder_name'] = f'data/Hallermann_ext_stim/no_field/x_shift={x_shift}_z_shift={z_shift}'
 
 
-# current_amps = [1e4, 9e3,  8e3,  7e3, 6e3, 5e3, 4.5e3, 4e3]
-# current_amps = [-1e4, -9e3, -8e3, -7e3, -6e3, -5e3, -4.5e3, -4e3]
-# current_amps = [-3.5e3, -3e3]
 # current_amps = [-2e4, -1.9e4, -1.8e4, -1.7e4, -
 #                 1.6e4, -1.5e4, -1.4e4, -1.3e4, -1.2e4, -1.1e4, -1e4]
-current_amps = [-2e4, -1.9e4, -1.8e4, -1.7e4, -1.65e4, -1.6e4, -1.5e4]
+# current_amps = [-2e4, -1.9e4, -1.8e4, -1.7e4, -1.65e4, -1.6e4, -1.5e4]
+# current_amps = [2e4, 1.9e4, 1.8e4, 1.7e4, 1.65e4, 1.6e4, 1.5e4]
+current_amps = [-2e4, -1.95e4, -1.9e4, -1.85e4, -
+                1.8e4, -1.75e4, -1.7e4, -1.65e4, -1.6e4, -1.55e4, -1.5e4]
+# current_amps = [-1.45e4, -1.4e4, -1.35e4, -
+#                 1.3e4, -1.25e4, -1.2e4, -1.15e4, -1.1e4, -1.05e4, -1e4]
 # current_amps = [-1.4e4, -1.3e4, -1.2e4, -1.1e4, -1e4]
+# current_amps = [-2e4, -2.5e4, -3e4, -3.5e4, -4e4, -4.5e4, -5e4]
 
 
 measure_coords = np.array(
@@ -56,7 +62,7 @@ def run_hallermann(cell_models_folder, measure_coords, I, pos, z=np.pi, run_sim=
     monophasic_pulse_params['pulse_amp'] = I
     monophasic_pulse_params['positions'] = pos
     cellsim_Hallermann_params['z_rot'] = z
-    # monophasic_pulse_params['stop_time'] = 2.2
+    monophasic_pulse_params['stop_time'] = 5
 
     extPotSim = ExternalPotentialSimulation(
         cellsim_Hallermann_params, monophasic_pulse_params)

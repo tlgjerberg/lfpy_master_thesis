@@ -14,7 +14,6 @@ monophasic_pulse_params = dict(
     # asymmetry=-.975,
     electrode_radii=1,
     # reverse_pulse_order=True,
-    # pulse_type="biphasic_square",
     pulse_type="monophasic",
     # magnitudes=[-0.1e5],
     pulse_amp=1e4,  # nA
