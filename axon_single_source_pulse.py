@@ -18,15 +18,6 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-"""
-Improve plotting
-
-Stimulate using current of 10 muA and go lower after (Histed et Al)
-
-Improve plot_cellsim_alt for easy reading and page formatting.
-
-
-"""
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
 cellsim_bisc_stick_params['save_folder_name'] = 'data/axon_bisc_dist_stim'
@@ -57,8 +48,6 @@ elec_positions = np.array([[0, 0, -800],
 
 measure_coordinates = np.array(
     [[0, 0, 0], [0, 0, 300], [0, 0, 600], [0, 0, 1000]])
-
-# elec_positions = set_electrode_pos(measure_coordinates)
 
 
 def run_axon(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_sim=False):

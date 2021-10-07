@@ -17,20 +17,6 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_double_morph'
-
-
-elec_positions = np.array(
-    [[700, 60, -352], [750, 60, -352], [-750, -50, -352], [-700, -50, -352]])
-
-current_amps = [-1e4]
-
-measure_coordinates = np.array([[680, 0, -548]])
-
-
-cell_rot = [np.pi, 0]
-
 
 def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim=False, plot_sim=False):
 
@@ -41,11 +27,10 @@ def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim
     extPotSim = ExternalPotentialSimulation(
         cellsim_Hallermann_params, monophasic_pulse_params)
     cell = extPotSim.return_cell(cell_models_folder)
-    # sim_name = extPotSim.return_sim_name()
 
     if run_sim:
 
-        extPotSim.run_ext_sim(cell, measure_coords, 20)
+        extPotSim.run_ext_sim(cell, measure_coords, 20, verbose=True)
         # extPotSim.print_measure_points(cell)
 
     else:
@@ -53,31 +38,47 @@ def run_double_hallermann(cell_models_folder, measure_coords, I, pos, z, run_sim
 
     if plot_sim:
         z_rot = [np.pi, 0]
+        print('test -1')
+        # extPotSim.plot_double_morphology(
+        #     cell_models_folder, z_rot, measure_coords)
+        print('test 1')
+        extPotSim.plot_double_mem_pot(
+            z_rot, cell_models_folder, measure_coords)
 
-        extPotSim.plot_double_morphology(
-            cell_models_folder, z_rot, measure_coords)
     else:
         print("No plot generated")
-
-    if z == 0 and plot_sim:
-
-        extPotSim.plot_double_mem_pot()
 
 
 start = time.time()
 
+cell_models_folder = join(os.path.dirname(__file__), "cell_models")
+cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_double_morph'
+
+elec_positions = np.array(
+    [[700, 60, -352], [750, 60, -352], [-750, -50, -352], [-700, -50, -352]])
+
+I = -1e4
+
+cell_rot = [np.pi, 0]
+
 task_idx = -1
 
 for z in cell_rot:
-    for I in current_amps:
-        for pos in elec_positions:
-            task_idx += 1
-            if not divmod(task_idx, SIZE)[1] == RANK:
-                continue
+    if z == 0:
+        print(f'{0}')
+        measure_coordinates = np.array([[-680, -50, -352]])
+    elif z == np.pi:
+        print(f'{np.pi:.2f}')
+        measure_coordinates = np.array([[680, 60, -352]])
+    for pos in elec_positions:
+        task_idx += 1
+        if not divmod(task_idx, SIZE)[1] == RANK:
+            continue
 
-            run_double_hallermann(
-                cell_models_folder, measure_coordinates, I, pos, z, True, False)
-            print("RANK %d doing task %d" % (RANK, task_idx))
+        print('measure coordinates: ', measure_coordinates)
+        run_double_hallermann(
+            cell_models_folder, measure_coordinates, I, pos, z, False, True)
+        print("RANK %d doing task %d" % (RANK, task_idx))
 
 end = time.time()
 print(f'Time to execute {end - start} seconds')

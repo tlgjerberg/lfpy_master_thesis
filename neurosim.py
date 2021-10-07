@@ -234,7 +234,6 @@ class NeuronSimulation:
         """
 
         file_name = self._sim_name
-        print(file_name)
 
         tfile = join(self.save_folder, f'{file_name}_tvec.npy')
         vfile = join(self.save_folder, f'{file_name}_vmem.npy')
