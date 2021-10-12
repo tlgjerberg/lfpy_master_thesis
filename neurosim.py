@@ -171,7 +171,7 @@ class NeuronSimulation:
 
             for mc in self.measure_pnts:
                 print('name', cell.get_idx_name(mc))
-                print('measure_coord', cell.x[mc].mean(),
+                print('measurement coordinate', cell.x[mc].mean(),
                       cell.y[mc].mean(), cell.z[mc].mean())
 
         else:

@@ -139,7 +139,8 @@ class ExternalPotentialSimulation(NeuronSimulation):
             Input: LFPy Cell object and coordinates for the comparments to
                    record.
         """
-
+        print('z_rot: ', self.z_rot)
+        print('msre_coords: ', comp_coords)
         self.create_measure_points(cell, comp_coords)
 
         if verbose:
@@ -151,7 +152,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         cell.__del__()
 
-    def plot_cellsim(self, cell_models_folder, com_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
+    def plot_cellsim(self, cell_models_folder, measure_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
         """
         Ploting a combined figure of cell morphology, current amplitude and
         membrane potential
@@ -219,7 +220,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         cell.__del__()
 
-    def plot_double_morphology(self, cell_models_folder, z_rot, msre_coords, xlim=[-760, 760], ylim=[-610, 1200]):
+    def plot_double_morphology(self, cell_models_folder, z_rot, measure_coords, xlim=[-800, 800], ylim=[-610, 1200]):
         """Plots two mrophologies next to each other with an electrode
         representation placed at the same point between them at both morphology
         plots.
@@ -234,8 +235,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
         fig = plt.figure()
         self.z_rot = z_rot[0]
         cell1 = self.return_cell(cell_models_folder)
-        self.create_measure_points(cell1, msre_coords)
-        self.extracellular_stimuli(cell1)
+        self.create_measure_points(cell1, measure_coords[0])
 
         self.plotSim.plot_idxs(self.measure_pnts)
 
@@ -250,9 +250,10 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         self.z_rot = z_rot[1]
         cell2 = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell2, measure_coords[1])
 
-        self.create_measure_points(cell2, msre_coords)
-        self.extracellular_stimuli(cell2)
+        self.plotSim.plot_idxs(self.measure_pnts)
+
         self.plotSim.plot_morphology(
             cell2, fig, xlim, ylim, morph_ax_params2)
 
@@ -270,21 +271,19 @@ class ExternalPotentialSimulation(NeuronSimulation):
         # plt.show()
         plt.close(fig=fig)
 
-        print('test 0')
+    def plot_double_mem_pot(self, z_rot, cell_models_folder, measure_coords):
 
-    def plot_double_mem_pot(self, z_rot, cell_models_folder, msre_coords):
-        print('test 2')
         mem_axes_placement1 = [0.2, 0.6, 0.6, 0.3]
         mem_axes_placement2 = [0.2, 0.2, 0.6, 0.3]
 
-        cell = self.return_cell(cell_models_folder)
-        self.create_measure_points(cell, msre_coords)
-        self.plotSim.plot_idxs(self.measure_pnts)
         fig = plt.figure()
 
-        self.z_rot = np.pi
+        self.z_rot = z_rot[0]
         self.update_sim_name()
-        print('sim name 1: ', self._sim_name)
+        cell1 = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell1, measure_coords[0])
+        self.plotSim.plot_idxs(self.measure_pnts)
+
         tfile = join(self.save_folder, f'{self._sim_name}_tvec.npy')
         vfile = join(self.save_folder, f'{self._sim_name}_vmem.npy')
         cell_tvec = np.load(tfile)
@@ -293,9 +292,17 @@ class ExternalPotentialSimulation(NeuronSimulation):
         self.plotSim.plot_membrane_potential(
             fig, cell_tvec, cell_vmem, self.tstop, mem_axes_placement1, False)
 
-        self.z_rot = 0
+        mirror_x_line = 780  # Midpoint
+        x_diff = 780 - self.x0  # Difference between midpoint and electrode
+        mr_pos_x = -780 - x_diff
+        self.x0 = mr_pos_x  # Mirrored x coordinate
+        self.y0 = -60
+        self.z_rot = z_rot[1]
         self.update_sim_name()
-        print('sim name 2: ', self._sim_name)
+        cell2 = self.return_cell(cell_models_folder)
+        self.create_measure_points(cell2, measure_coords[1])
+        self.plotSim.plot_idxs(self.measure_pnts)
+
         tfile = join(self.save_folder, f'{self._sim_name}_tvec.npy')
         vfile = join(self.save_folder, f'{self._sim_name}_vmem.npy')
         cell_tvec = np.load(tfile)
@@ -305,6 +312,6 @@ class ExternalPotentialSimulation(NeuronSimulation):
             fig, cell_tvec, cell_vmem, self.tstop, mem_axes_placement2, False)
 
         fig.savefig(join(
-            self.save_folder, f'double_vmem_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'), dpi=300)
+            self.save_folder, f'double_vmem_{self.cell_name}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'), dpi=300)
         # plt.show()
         plt.close(fig=fig)
