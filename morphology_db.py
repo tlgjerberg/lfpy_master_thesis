@@ -17,8 +17,13 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
+
 with open('layer_download.json') as layer_download:
     layer_data = json.load(layer_download)
+
+layer_L5 = layer_data['L5']
+# Layer 5 morphological type data
+L5_morph_types = layer_L5['No. of neurons per morphological types']
 
 
 def neuron_sets(zip_dir, target_dir, neuron_names):
@@ -66,15 +71,9 @@ Layer_depths = dict(
 )
 
 
-"""
-To make sure cell variants are grouped correctly run:
-# of cells % # of processes == 5 to to keep the sets of same type of cell in one
-batch.
-"""
 start_time = time.time()
 
 # Create a save folder for data if one does not exist
-
 save_folder = 'data/morphology_search/'
 
 """
@@ -89,8 +88,8 @@ if RANK == 0:
     zip_dir = 'hoc_combos_syn.1_0_10.allzips'
     target_dir = 'hoc_combos_syn.1_0_10.unzipped'
 
-    neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
-    # neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']  # 1, 1, 1, 1
+    # neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
+    neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']  # 1, 1, 1, 1
     neuron_chunks = neuron_sets(zip_dir, target_dir, neuron_names)
 
 else:
@@ -111,6 +110,11 @@ cortex_height = 2082  # The total height of the rat cortex in the Blue Brain dat
 
 
 def count_axon_terminals(neuron_chunks, cell_depths, cortex_height):
+    """
+    To make sure cell variants are grouped correctly run:
+    # of cells % # of processes == 5 to to keep the sets of same type of cell in one
+    batch.
+    """
 
     terminal_depths = []  # List of axon terminal depths corresonding to indices
 
@@ -187,20 +191,25 @@ def count_axon_terminals(neuron_chunks, cell_depths, cortex_height):
             return axon_terminals, terminal_depths
 
 
-axon_terminals, terminal_depths = count_axon_terminals(neuron_chunks)
-hist_name = neuron_chunks[0][31:-2]  # Name of neuron type
-num_bins = 1000
+axon_terminals, terminal_depths = count_axon_terminals(
+    neuron_chunks, cell_depths, cortex_height)
+
+neuron_name = neuron_chunks[0][31:-2]  # Name of neuron type
+num_bins = 1000  # Number of bins used in the histograms
+
 # Changing terminal depths to shift z-axis to be positive downwards
 terminal_depths = np.array(terminal_depths)
 
-# Weights to scale each bin by number of cell variants
-const_weights = (1. / len(neuron_chunks)) * np.ones(len(terminal_depths))
+print(neuron_name)
+num_neurons = L5_morph_types[neuron_name]  # Number of neurons of selected type
+scale_factor = 1. / num_neurons  # Weights scaling
+type_weights = scale_factor * np.ones(len(terminal_depths))  # Array of weights
 
 # Creating a histogram of axon terminal depths for each neuron type
 if save_cell_hist:
     plt.figure()
     plt.hist(terminal_depths, bins=num_bins,
-             density=True, orientation='horizontal')
+             density=True, weights=type_weights, orientation='horizontal')
     ax = plt.gca()
     ax.invert_yaxis()
     plt.xlabel('# of terminals')

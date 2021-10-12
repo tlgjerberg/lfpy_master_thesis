@@ -3,7 +3,6 @@ from plotting import PlotSimulation
 from fitting import Fitting
 from set_electrode_position import set_electrode_pos
 from parameters import (monophasic_pulse_params, cellsim_bisc_stick_params)
-# from fitting import monoExp, powerlaw, linlaw, fit_exponential, fit_power, fit_linear
 import numpy as np
 import neuron
 import matplotlib.pyplot as plt
