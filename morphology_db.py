@@ -31,17 +31,16 @@ def neuron_sets(zip_dir, target_dir, neuron_names):
     if not os.path.isdir(target_dir):
         unzip_directory(zip_dir, target_dir)
 
-    nneurons = []
+    neuron_chunks = []
+    neuron_chunks_dict = {}
     for name in neuron_names:
+        neuron_chunks_dict = {}
+
         n = sorted(
             glob(join('hoc_combos_syn.1_0_10.unzipped', 'L5_' + name + '*')))
-        nneurons.append(n)
-    # Splitting list of neurons into chunks equal to number of processes
 
-    neurons = [j for sub in nneurons for j in sub]
-
-    size = int(len(neurons) / 5)
-    neuron_chunks = list(chunks(neurons, size))
+        neuron_chunks_dict[name] = n
+        neuron_chunks.append(neuron_chunks_dict)
 
     return neuron_chunks
 
@@ -88,8 +87,8 @@ if RANK == 0:
     zip_dir = 'hoc_combos_syn.1_0_10.allzips'
     target_dir = 'hoc_combos_syn.1_0_10.unzipped'
 
-    # neuron_names = ['BP', 'BTC', 'DBC', 'MC']  # 6, 3, 7, 7
-    neuron_names = ['STPC', 'TTPC1', 'TTPC2', 'UTPC']  # 1, 1, 1, 1
+    # neuron_names = ['L5_BP', 'L5_BTC', 'L5_DBC', 'L5_MC']  # 6, 3, 7, 7
+    neuron_names = ['L5_STPC', 'L5_TTPC1', 'L5_TTPC2', 'L5_UTPC']  # 1, 1, 1, 1
     neuron_chunks = neuron_sets(zip_dir, target_dir, neuron_names)
 
 else:
@@ -109,7 +108,7 @@ cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths
 cortex_height = 2082  # The total height of the rat cortex in the Blue Brain database
 
 
-def count_axon_terminals(neuron_chunks, cell_depths, cortex_height):
+def count_axon_terminals(neuron_type, neuron_sub_types, cell_depths, cortex_height):
     """
     To make sure cell variants are grouped correctly run:
     # of cells % # of processes == 5 to to keep the sets of same type of cell in one
@@ -121,7 +120,7 @@ def count_axon_terminals(neuron_chunks, cell_depths, cortex_height):
     neuron_variants_counter = 0
 
     # Looping through each set/chunk of neurons and counting the axon terminals
-    for nrn in neuron_chunks:
+    for nrn in neuron_sub_types:
         morphology_path = join(nrn, 'morphology')
 
         axon_terminals = []  # List of cell indices corresonding to axon terminals
@@ -186,22 +185,27 @@ def count_axon_terminals(neuron_chunks, cell_depths, cortex_height):
                 ax1.set_ylabel('y[$\mu m$]')
 
                 plt.savefig(
-                    join(save_folder, f"{morph_name}_morphology_depth.png"), dpi=300)
+                    join(save_folder, f"{neuron_type}_morphology_depth.png"), dpi=300)
 
             return axon_terminals, terminal_depths
 
 
-axon_terminals, terminal_depths = count_axon_terminals(
-    neuron_chunks, cell_depths, cortex_height)
+# print(f'RANK {RANK} chunk: ', neuron_chunks)
 
-neuron_name = neuron_chunks[0][31:-2]  # Name of neuron type
+neuron_type, neuron_sub_types = next(
+    iter(neuron_chunks.items()))  # Name of neuron type
+
+axon_terminals, terminal_depths = count_axon_terminals(neuron_type,
+                                                       neuron_sub_types,
+                                                       cell_depths, cortex_height)
+
 num_bins = 1000  # Number of bins used in the histograms
 
 # Changing terminal depths to shift z-axis to be positive downwards
 terminal_depths = np.array(terminal_depths)
 
-print(neuron_name)
-num_neurons = L5_morph_types[neuron_name]  # Number of neurons of selected type
+# Number of neurons of selected type
+num_neurons = L5_morph_types['neuron_type]
 scale_factor = 1. / num_neurons  # Weights scaling
 type_weights = scale_factor * np.ones(len(terminal_depths))  # Array of weights
 
@@ -215,7 +219,7 @@ if save_cell_hist:
     plt.xlabel('# of terminals')
     plt.ylabel('Layer depth [$\mu m$]')
     plt.savefig(
-        join(save_folder, f"layer_terminal_dist_histogram_{hist_name}_bins_{num_bins}.png"), dpi=300)
+        join(save_folder, f"layer_terminal_dist_histogram_{neuron_type}_bins_{num_bins}.png"), dpi=300)
 
 # Sending length of all terminal_depths arrays to root
 sendcounts = np.array(COMM.gather(len(terminal_depths), root=0))
@@ -241,7 +245,7 @@ if RANK == 0:
     plt.xlabel('# of terminals')
     plt.ylabel('Layer depth [$\mu m$]')
     plt.savefig(
-        join(save_folder, f"layer_terminal_dist_histogram_{hist_name[0:2]}_bins_{num_bins}.png"), dpi=300)
+        join(save_folder, f"layer_terminal_dist_histogram_{neuron_type[0:2]}_bins_{num_bins}.png"), dpi=300)
 
 end_time = time.time()
 print(f'RANK: {RANK}. Time to execute: {end_time - start_time} seconds')
