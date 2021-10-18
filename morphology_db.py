@@ -42,14 +42,6 @@ def neuron_sets(zip_dir, target_dir, neuron_names):
     return neuron_chunks
 
 
-# def chunks(l, n):
-#     """Yield n number of sequential chunks from l."""
-#     d, r = divmod(len(l), n)
-#     for i in range(n):
-#         si = (d + 1) * (i if i < r else r) + d * (0 if i < r else i - r)
-#         yield l[si:si + (d + 1 if i < r else d)]
-
-
 def count_axon_terminals(neuron_type, neuron_sub_types, cell_depths, cortex_height, save_morph=False):
     """
     To make sure cell variants are grouped correctly run:
@@ -183,18 +175,21 @@ neuron_chunks = COMM.scatter(neuron_chunks, root=0)
 
 cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths in L5
 # The total height of the rat cortex in the Blue Brain database
-cortex_thickness = Layer_depths['L6']
+cortex_height = Layer_depths['L6'] + Layer_thickness['L6']
 
-
+# Split dictionary of neuron type and morphology files
 neuron_type, neuron_sub_types = next(
-    iter(neuron_chunks.items()))  # Name of neuron type
+    iter(neuron_chunks.items()))
 
 axon_terminals, terminal_depths = count_axon_terminals(neuron_type,
                                                        neuron_sub_types,
                                                        cell_depths, cortex_height)
 
 # Creating a histogram of axon terminal depths for each neuron subtype
-subtype_name = nrn[31:-2]  # Subtype name
+subtype_name = neuron_sub_types[0][31:-2]  # Subtype name
+
+num_bins = 1000  # Number of bins used in the histograms
+
 plt.figure()
 plt.hist(terminal_depths, bins=num_bins,
          density=True, orientation='horizontal')
@@ -205,34 +200,7 @@ plt.ylabel('Layer depth [$\mu m$]')
 plt.savefig(
     join(save_folder, f"layer_terminal_dist_histogram_{subtype_name}_bins_{num_bins}.png"), dpi=300)
 
-# terminal_depths = []  # Random integer list for testing
-# for i in range(10):
-#     n = randint(0, 10)
-#     terminal_depths.append(n)
 
-num_bins = 1000  # Number of bins used in the histograms
-
-# Changing terminal depths to shift z-axis to be positive downwards
-# terminal_depths = np.array(terminal_depths)
-
-
-# Number of neurons of selected type
-num_neurons = L5_morph_types[neuron_type]
-scale_factor = 1. / num_neurons  # Weights scaling
-type_weights = scale_factor * np.ones(len(terminal_depths))  # Array of weights
-
-
-# Sending length of all terminal_depths arrays to root
-# sendcounts = np.array(COMM.gather(len(terminal_depths), root=0))
-#
-# if RANK == 0:
-#     terminal_depths_layer = np.empty(sum(sendcounts), dtype='float64')
-#
-# else:
-#     terminal_depths_layer = None
-#
-# COMM.Gatherv(terminal_depths, (terminal_depths_layer, sendcounts), root=0)
-# print(f'RANK {RANK}', neuron_type)
 terminal_depths_dict_list = {neuron_type: terminal_depths}
 print(neuron_type, len(terminal_depths))
 terminal_depths_dict_list = COMM.gather(terminal_depths_dict_list, root=0)
@@ -246,10 +214,17 @@ if RANK == 0:
             terminal_depths_dict[key].extend(value)
 
     print(type(terminal_depths_dict))
-    print(terminal_depths_dict)
+
+    num_bins = 1000  # Number of bins used in the histograms
 
     for key, value in terminal_depths_dict.items():
         print(key, len(value))
+
+        # Number of neurons of selected type
+        num_neurons = L5_morph_types[neuron_type]
+        scale_factor = 1. / num_neurons  # Weights scaling
+        type_weights = scale_factor * \
+            np.ones(len(terminal_depths_dict[key]))  # Array of weights
 
         # Creating a histogram of axon terminal depths for each neuron type
         plt.figure()
@@ -260,7 +235,7 @@ if RANK == 0:
         plt.xlabel('# of terminals')
         plt.ylabel('Layer depth [$\mu m$]')
         plt.savefig(
-            join(save_folder, f"layer_terminal_dist_histogram_{morph_name}_bins_{num_bins}.png"), dpi=300)
+            join(save_folder, f"layer_terminal_dist_histogram_{key}_bins_{num_bins}.png"), dpi=300)
 
     # plt.figure()
     # plt.hist(terminal_depths_layer, bins=num_bins,
