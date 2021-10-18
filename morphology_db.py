@@ -11,24 +11,21 @@ from mpi4py import MPI
 from unzipper import unzip_directory
 import time
 import json
-
+from collections import defaultdict
+from random import randint
 
 COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
 
-with open('layer_download.json') as layer_download:
-    layer_data = json.load(layer_download)
-
-layer_L5 = layer_data['L5']
-# Layer 5 morphological type data
-L5_morph_types = layer_L5['No. of neurons per morphological types']
-
-
 def neuron_sets(zip_dir, target_dir, neuron_names):
-
+    """
+    Extract cell models from Blue Brain directory and sort all cells of the same
+    type into chunks.
+    """
     if not os.path.isdir(target_dir):
+
         unzip_directory(zip_dir, target_dir)
 
     neuron_chunks = []
@@ -37,7 +34,7 @@ def neuron_sets(zip_dir, target_dir, neuron_names):
         neuron_chunks_dict = {}
 
         n = sorted(
-            glob(join('hoc_combos_syn.1_0_10.unzipped', 'L5_' + name + '*')))
+            glob(join('hoc_combos_syn.1_0_10.unzipped', name + '*')))
 
         neuron_chunks_dict[name] = n
         neuron_chunks.append(neuron_chunks_dict)
@@ -45,70 +42,15 @@ def neuron_sets(zip_dir, target_dir, neuron_names):
     return neuron_chunks
 
 
-def chunks(l, n):
-    """Yield n number of sequential chunks from l."""
-    d, r = divmod(len(l), n)
-    for i in range(n):
-        si = (d + 1) * (i if i < r else r) + d * (0 if i < r else i - r)
-        yield l[si:si + (d + 1 if i < r else d)]
+# def chunks(l, n):
+#     """Yield n number of sequential chunks from l."""
+#     d, r = divmod(len(l), n)
+#     for i in range(n):
+#         si = (d + 1) * (i if i < r else r) + d * (0 if i < r else i - r)
+#         yield l[si:si + (d + 1 if i < r else d)]
 
 
-Layer_thickness = dict(
-    L1=165,
-    L23=502,
-    L4=190,
-    L5=525,
-    L6=700
-)
-
-Layer_depths = dict(
-    L1=165,
-    L23=667,
-    L4=857,
-    L5=1382,
-    L6=2082
-)
-
-
-start_time = time.time()
-
-# Create a save folder for data if one does not exist
-save_folder = 'data/morphology_search/'
-
-"""
-Extract cell models from Blue Brain directory and sort all cells of the same
-type into chunks.
-"""
-if RANK == 0:
-
-    if not os.path.isdir(save_folder):
-        os.makedirs(save_folder)
-
-    zip_dir = 'hoc_combos_syn.1_0_10.allzips'
-    target_dir = 'hoc_combos_syn.1_0_10.unzipped'
-
-    # neuron_names = ['L5_BP', 'L5_BTC', 'L5_DBC', 'L5_MC']  # 6, 3, 7, 7
-    neuron_names = ['L5_STPC', 'L5_TTPC1', 'L5_TTPC2', 'L5_UTPC']  # 1, 1, 1, 1
-    neuron_chunks = neuron_sets(zip_dir, target_dir, neuron_names)
-
-else:
-    neuron_chunks = None
-
-# Scatter each chunk of neurons between processes
-neuron_chunks = COMM.scatter(neuron_chunks, root=0)
-
-"""
-
-"""
-
-save_morph = True
-save_cell_hist = True
-
-cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths
-cortex_height = 2082  # The total height of the rat cortex in the Blue Brain database
-
-
-def count_axon_terminals(neuron_type, neuron_sub_types, cell_depths, cortex_height):
+def count_axon_terminals(neuron_type, neuron_sub_types, cell_depths, cortex_height, save_morph=False):
     """
     To make sure cell variants are grouped correctly run:
     # of cells % # of processes == 5 to to keep the sets of same type of cell in one
@@ -125,9 +67,9 @@ def count_axon_terminals(neuron_type, neuron_sub_types, cell_depths, cortex_heig
 
         axon_terminals = []  # List of cell indices corresonding to axon terminals
 
-        for morphologyfile in glob(join(morphology_path, '*')):
+        morph_name = nrn[31:-2]  # Name of the morphology
 
-            morph_name = nrn[31:]  # Name of the morphology
+        for morphologyfile in glob(join(morphology_path, '*')):
 
             # Create cell object a given morphology and setting rotation
             cell = LFPy.Cell(morphology=morphologyfile)
@@ -185,12 +127,64 @@ def count_axon_terminals(neuron_type, neuron_sub_types, cell_depths, cortex_heig
                 ax1.set_ylabel('y[$\mu m$]')
 
                 plt.savefig(
-                    join(save_folder, f"{neuron_type}_morphology_depth.png"), dpi=300)
+                    join(save_folder, f"{morph_name}_morphology_depth.png"), dpi=300)
 
             return axon_terminals, terminal_depths
 
 
-# print(f'RANK {RANK} chunk: ', neuron_chunks)
+Layer_thickness = dict(
+    L1=165,
+    L23=502,
+    L4=190,
+    L5=525,
+    L6=700
+)
+
+Layer_depths = dict(
+    L1=0,
+    L23=165,
+    L4=667,
+    L5=857,
+    L6=1382
+)
+
+
+start_time = time.time()
+
+# Create a save folder for data if one does not exist
+save_folder = 'data/morphology_search/'
+
+
+with open('layer_download.json') as layer_download:
+    layer_data = json.load(layer_download)
+
+layer_L5 = layer_data['L5']  # Dictionary of layer 5 data
+# Layer 5 morphological type data
+L5_morph_types = layer_L5['No. of neurons per morphological types']
+
+if RANK == 0:
+
+    if not os.path.isdir(save_folder):
+        os.makedirs(save_folder)
+
+    zip_dir = 'hoc_combos_syn.1_0_10.allzips'
+    target_dir = 'hoc_combos_syn.1_0_10.unzipped'
+
+    # neuron_names = ['L5_BP', 'L5_BTC', 'L5_DBC', 'L5_MC']  # 6, 3, 7, 7
+    neuron_names = ['L5_STPC', 'L5_TTPC1', 'L5_TTPC2', 'L5_UTPC']  # 1, 1, 1, 1
+    neuron_chunks = neuron_sets(zip_dir, target_dir, neuron_names)
+
+else:
+    neuron_chunks = None
+
+# Scatter each chunk of neurons between processes
+neuron_chunks = COMM.scatter(neuron_chunks, root=0)
+
+
+cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths in L5
+# The total height of the rat cortex in the Blue Brain database
+cortex_thickness = Layer_depths['L6']
+
 
 neuron_type, neuron_sub_types = next(
     iter(neuron_chunks.items()))  # Name of neuron type
@@ -199,53 +193,84 @@ axon_terminals, terminal_depths = count_axon_terminals(neuron_type,
                                                        neuron_sub_types,
                                                        cell_depths, cortex_height)
 
+# Creating a histogram of axon terminal depths for each neuron subtype
+subtype_name = nrn[31:-2]  # Subtype name
+plt.figure()
+plt.hist(terminal_depths, bins=num_bins,
+         density=True, orientation='horizontal')
+ax = plt.gca()
+ax.invert_yaxis()
+plt.xlabel('# of terminals')
+plt.ylabel('Layer depth [$\mu m$]')
+plt.savefig(
+    join(save_folder, f"layer_terminal_dist_histogram_{subtype_name}_bins_{num_bins}.png"), dpi=300)
+
+# terminal_depths = []  # Random integer list for testing
+# for i in range(10):
+#     n = randint(0, 10)
+#     terminal_depths.append(n)
+
 num_bins = 1000  # Number of bins used in the histograms
 
 # Changing terminal depths to shift z-axis to be positive downwards
-terminal_depths = np.array(terminal_depths)
+# terminal_depths = np.array(terminal_depths)
+
 
 # Number of neurons of selected type
-num_neurons = L5_morph_types['neuron_type]
+num_neurons = L5_morph_types[neuron_type]
 scale_factor = 1. / num_neurons  # Weights scaling
 type_weights = scale_factor * np.ones(len(terminal_depths))  # Array of weights
 
-# Creating a histogram of axon terminal depths for each neuron type
-if save_cell_hist:
-    plt.figure()
-    plt.hist(terminal_depths, bins=num_bins,
-             density=True, weights=type_weights, orientation='horizontal')
-    ax = plt.gca()
-    ax.invert_yaxis()
-    plt.xlabel('# of terminals')
-    plt.ylabel('Layer depth [$\mu m$]')
-    plt.savefig(
-        join(save_folder, f"layer_terminal_dist_histogram_{neuron_type}_bins_{num_bins}.png"), dpi=300)
 
 # Sending length of all terminal_depths arrays to root
-sendcounts = np.array(COMM.gather(len(terminal_depths), root=0))
+# sendcounts = np.array(COMM.gather(len(terminal_depths), root=0))
+#
+# if RANK == 0:
+#     terminal_depths_layer = np.empty(sum(sendcounts), dtype='float64')
+#
+# else:
+#     terminal_depths_layer = None
+#
+# COMM.Gatherv(terminal_depths, (terminal_depths_layer, sendcounts), root=0)
+# print(f'RANK {RANK}', neuron_type)
+terminal_depths_dict_list = {neuron_type: terminal_depths}
+print(neuron_type, len(terminal_depths))
+terminal_depths_dict_list = COMM.gather(terminal_depths_dict_list, root=0)
+
 
 if RANK == 0:
-    terminal_depths_layer = np.empty(sum(sendcounts), dtype='float64')
 
-else:
-    terminal_depths_layer = None
+    terminal_depths_dict = defaultdict(list)
+    for d in terminal_depths_dict_list:
+        for key, value in d.items():
+            terminal_depths_dict[key].extend(value)
 
-COMM.Gatherv(terminal_depths, (terminal_depths_layer, sendcounts), root=0)
+    print(type(terminal_depths_dict))
+    print(terminal_depths_dict)
 
-if RANK == 0:
-    print(f'# of terminals in layer {hist_name[0:2]}', len(
-        terminal_depths_layer))
-    plt.figure()
-    # plt.hist(terminal_depths, bins=100,
-    #          weights=const_weights, orientation='horizontal')
-    plt.hist(terminal_depths_layer, bins=num_bins,
-             orientation='horizontal', density=True)
-    ax = plt.gca()
-    ax.invert_yaxis()
-    plt.xlabel('# of terminals')
-    plt.ylabel('Layer depth [$\mu m$]')
-    plt.savefig(
-        join(save_folder, f"layer_terminal_dist_histogram_{neuron_type[0:2]}_bins_{num_bins}.png"), dpi=300)
+    for key, value in terminal_depths_dict.items():
+        print(key, len(value))
+
+        # Creating a histogram of axon terminal depths for each neuron type
+        plt.figure()
+        plt.hist(value, bins=num_bins,
+                 density=True, weights=type_weights, orientation='horizontal')
+        ax = plt.gca()
+        ax.invert_yaxis()
+        plt.xlabel('# of terminals')
+        plt.ylabel('Layer depth [$\mu m$]')
+        plt.savefig(
+            join(save_folder, f"layer_terminal_dist_histogram_{morph_name}_bins_{num_bins}.png"), dpi=300)
+
+    # plt.figure()
+    # plt.hist(terminal_depths_layer, bins=num_bins,
+    #          orientation='horizontal', density=True)
+    # ax = plt.gca()
+    # ax.invert_yaxis()
+    # plt.xlabel('# of terminals')
+    # plt.ylabel('Layer depth [$\mu m$]')
+    # plt.savefig(
+    #     join(save_folder, f"layer_terminal_dist_histogram_{neuron_type}_bins_{num_bins}.png"), dpi=300)
 
 end_time = time.time()
 print(f'RANK: {RANK}. Time to execute: {end_time - start_time} seconds')
