@@ -19,7 +19,7 @@ SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
 
-def neuron_sets(zip_dir, target_dir, neuron_names):
+def neuron_sets(zip_dir, target_dir, neuron_names, subtype_names):
     """
     Extract cell models from Blue Brain directory and sort all cells of the same
     type into chunks.
@@ -27,17 +27,17 @@ def neuron_sets(zip_dir, target_dir, neuron_names):
     if not os.path.isdir(target_dir):
 
         unzip_directory(zip_dir, target_dir)
-
     neuron_chunks = []
-    neuron_chunks_dict = {}
     for name in neuron_names:
-        neuron_chunks_dict = {}
+        for subtype in subtype_names:  # electrical type
+            neuron_chunks_dict = {}
 
-        n = sorted(
-            glob(join('hoc_combos_syn.1_0_10.unzipped', name + '*')))
+            n = sorted(
+                glob(join('hoc_combos_syn.1_0_10.unzipped', name + '_' + subtype + '*')))
 
-        neuron_chunks_dict[name] = n
-        neuron_chunks.append(neuron_chunks_dict)
+            if n:
+                neuron_chunks_dict[name] = n
+                neuron_chunks.append(neuron_chunks_dict)
 
     return neuron_chunks
 
@@ -151,8 +151,10 @@ with open('layer_download.json') as layer_download:
     layer_data = json.load(layer_download)
 
 layer_L5 = layer_data['L5']  # Dictionary of layer 5 data
-# Layer 5 morphological type data
+# Layer 5 morphological types
 L5_morph_types = layer_L5['No. of neurons per morphological types']
+# Layer 5 electrical types
+L5_elec_types = layer_L5['No. of neurons per electrical types']
 
 if RANK == 0:
 
@@ -162,16 +164,16 @@ if RANK == 0:
     zip_dir = 'hoc_combos_syn.1_0_10.allzips'
     target_dir = 'hoc_combos_syn.1_0_10.unzipped'
 
-    # neuron_names = ['L5_BP', 'L5_BTC', 'L5_DBC', 'L5_MC']  # 6, 3, 7, 7
-    neuron_names = ['L5_STPC', 'L5_TTPC1', 'L5_TTPC2', 'L5_UTPC']  # 1, 1, 1, 1
-    neuron_chunks = neuron_sets(zip_dir, target_dir, neuron_names)
+    neuron_names = ['L5_BP', 'L5_BTC', 'L5_DBC', 'L5_MC']  # 6, 3, 7, 7
+    # neuron_names = ['L5_STPC', 'L5_TTPC1', 'L5_TTPC2', 'L5_UTPC']  # 1, 1, 1, 1
+    neuron_chunks = neuron_sets(
+        zip_dir, target_dir, neuron_names, L5_elec_types)
 
 else:
     neuron_chunks = None
 
 # Scatter each chunk of neurons between processes
 neuron_chunks = COMM.scatter(neuron_chunks, root=0)
-
 
 cell_depths = np.linspace(857, 1382, 100)  # Equally spaced cell depths in L5
 # The total height of the rat cortex in the Blue Brain database
@@ -181,13 +183,15 @@ cortex_height = Layer_depths['L6'] + Layer_thickness['L6']
 neuron_type, neuron_sub_types = next(
     iter(neuron_chunks.items()))
 
+save_morph = True  # Enables the plotting of morphologies
 axon_terminals, terminal_depths = count_axon_terminals(neuron_type,
                                                        neuron_sub_types,
-                                                       cell_depths, cortex_height)
+                                                       cell_depths,
+                                                       cortex_height,
+                                                       save_morph)
 
 # Creating a histogram of axon terminal depths for each neuron subtype
 subtype_name = neuron_sub_types[0][31:-2]  # Subtype name
-
 num_bins = 1000  # Number of bins used in the histograms
 
 plt.figure()
@@ -202,7 +206,7 @@ plt.savefig(
 
 
 terminal_depths_dict_list = {neuron_type: terminal_depths}
-print(neuron_type, len(terminal_depths))
+
 terminal_depths_dict_list = COMM.gather(terminal_depths_dict_list, root=0)
 
 
@@ -213,15 +217,12 @@ if RANK == 0:
         for key, value in d.items():
             terminal_depths_dict[key].extend(value)
 
-    print(type(terminal_depths_dict))
-
     num_bins = 1000  # Number of bins used in the histograms
 
     for key, value in terminal_depths_dict.items():
-        print(key, len(value))
 
         # Number of neurons of selected type
-        num_neurons = L5_morph_types[neuron_type]
+        num_neurons = L5_morph_types[key]
         scale_factor = 1. / num_neurons  # Weights scaling
         type_weights = scale_factor * \
             np.ones(len(terminal_depths_dict[key]))  # Array of weights
@@ -236,9 +237,12 @@ if RANK == 0:
         plt.ylabel('Layer depth [$\mu m$]')
         plt.savefig(
             join(save_folder, f"layer_terminal_dist_histogram_{key}_bins_{num_bins}.png"), dpi=300)
-
+    # tot_terminal_depths = []
+    # for key, value in terminal_depths_dict.items():
+    #     tot_terminal_depths.extend(value)
+    #
     # plt.figure()
-    # plt.hist(terminal_depths_layer, bins=num_bins,
+    # plt.hist(tot_terminal_depths, bins=num_bins,
     #          orientation='horizontal', density=True)
     # ax = plt.gca()
     # ax.invert_yaxis()
