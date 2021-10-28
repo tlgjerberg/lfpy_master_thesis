@@ -9,6 +9,7 @@ from os.path import join
 from mpi4py import MPI
 from neurosim import NeuronSimulation
 import matplotlib.pyplot as plt
+from scipy.signal import argrelextrema
 
 
 class ExternalPotentialSimulation(NeuronSimulation):
@@ -86,8 +87,9 @@ class ExternalPotentialSimulation(NeuronSimulation):
         """
         Detect steady state potential
         """
+        # v_ss = cell_vmem.flat[abs(cell_vmem).argmax()]
         v_ss = np.max(cell_vmem)
-        v_ss_idx = np.argmax(cell_vmem)
+        v_ss_idx = np.argmax(np.absolute(cell_vmem))
         # find_diff = np.diff(cell.vmem)
         return v_ss
 
@@ -119,8 +121,9 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         for mp in self.measure_pnts:
 
-            v_max = cell_vmem[mp].flat[abs(cell_vmem[mp]).argmax()]
-            dV_pot_dict[f'{mp}'] = v_max - self.v_init
+            dV = cell_vmem[mp] - self.v_init
+
+            dV_pot_dict[f'{mp}'] = dV.flat[abs(dV).argmax()]
 
         return dV_pot_dict
 
