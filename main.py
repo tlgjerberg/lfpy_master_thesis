@@ -119,7 +119,8 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         for mp in self.measure_pnts:
 
-            dV_pot_dict[f'{mp}'] = np.max(cell_vmem[mp]) - self.v_init
+            v_max = cell_vmem[mp].flat[abs(cell_vmem[mp]).argmax()]
+            dV_pot_dict[f'{mp}'] = v_max - self.v_init
 
         return dV_pot_dict
 
@@ -139,8 +140,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
             Input: LFPy Cell object and coordinates for the comparments to
                    record.
         """
-        print('z_rot: ', self.z_rot)
-        print('msre_coords: ', comp_coords)
+
         self.create_measure_points(cell, comp_coords)
 
         if verbose:
@@ -220,7 +220,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         cell.__del__()
 
-    def plot_double_morphology(self, cell_models_folder, z_rot, measure_coords, xlim=[-800, 800], ylim=[-610, 1200]):
+    def plot_double_morphology(self, cell_models_folder, z_rot, measure_coords, xlim=[-790, 790], ylim=[-610, 1200]):
         """Plots two mrophologies next to each other with an electrode
         representation placed at the same point between them at both morphology
         plots.
@@ -229,8 +229,8 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         self.xlim = xlim
         self.ylim = ylim
-        morph_ax_params1 = [0.05, 0.1, 0.5, 0.9]
-        morph_ax_params2 = [0.473, 0.1, 0.5, 0.9]
+        morph_ax_params1 = [0.06, 0.1, 0.5, 0.9]
+        morph_ax_params2 = [0.479, 0.1, 0.5, 0.9]
 
         fig = plt.figure()
         self.z_rot = z_rot[0]
@@ -241,7 +241,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         self.plotSim.plot_morphology(
             cell1, fig, xlim, ylim, morph_ax_params1)
-
+        print(self.x0)
         if self.x0 > 0:
             self.plotSim.draw_electrode(
                 self.x0, self.y0, self.z0, self.electrode_radii)
@@ -257,7 +257,8 @@ class ExternalPotentialSimulation(NeuronSimulation):
         self.plotSim.plot_morphology(
             cell2, fig, xlim, ylim, morph_ax_params2)
 
-        if self.x0 < 0:
+        if self.x0 > self.xlim[1]:
+            self.x0 = -730
             self.plotSim.draw_electrode(
                 self.x0, self.y0, self.z0, self.electrode_radii)
 
@@ -268,7 +269,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         fig.savefig(join(
             self.save_folder, f'double_hallermann_{self.cell_name}_z_rot={self.z_rot:.2f}_point_amp={self.amp}uA_elec_pos={self.x0}_{self.y0}_{self.z0}.png'), dpi=300)
-        # plt.show()
+        plt.show()
         plt.close(fig=fig)
 
     def plot_double_mem_pot(self, z_rot, cell_models_folder, measure_coords):
