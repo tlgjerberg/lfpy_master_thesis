@@ -24,10 +24,12 @@ def neuron_sets(zip_dir, target_dir, neuron_names, subtype_names):
     Extract cell models from Blue Brain directory and sort all cells of the same
     type into chunks.
     """
+    # Checks for db directory or unzips if .zip file exists instead
     if not os.path.isdir(target_dir):
 
         unzip_directory(zip_dir, target_dir)
-    neuron_chunks = []
+
+    neuron_chunks = []  # List of neuron chunk dictionaries
     for name in neuron_names:
         for subtype in subtype_names:  # electrical type
             neuron_chunks_dict = {}
@@ -164,7 +166,8 @@ if RANK == 0:
     zip_dir = 'hoc_combos_syn.1_0_10.allzips'
     target_dir = 'hoc_combos_syn.1_0_10.unzipped'
 
-    neuron_names = ['L5_BP', 'L5_BTC', 'L5_DBC', 'L5_MC']  # 6, 3, 7, 7
+    neuron_names = ['L5_BP', 'L5_BTC', 'L5_ChC',
+                    'L5_DBC', 'L5_LBC', 'L5_MC',  'L5_NBC', 'L5_NGC', 'L5_SBC']  # 6, 3, 3, 7, 7, 7, 8, 4, 3
     # neuron_names = ['L5_STPC', 'L5_TTPC1', 'L5_TTPC2', 'L5_UTPC']  # 1, 1, 1, 1
     neuron_chunks = neuron_sets(
         zip_dir, target_dir, neuron_names, L5_elec_types)
@@ -224,13 +227,23 @@ if RANK == 0:
         # Number of neurons of selected type
         num_neurons = L5_morph_types[key]
         scale_factor = 1. / num_neurons  # Weights scaling
-        type_weights = scale_factor * \
+        type_weights = scale_factor * 5 * \
             np.ones(len(terminal_depths_dict[key]))  # Array of weights
 
         # Creating a histogram of axon terminal depths for each neuron type
         plt.figure()
         plt.hist(value, bins=num_bins,
                  density=True, weights=type_weights, orientation='horizontal')
+        ax = plt.gca()
+        ax.invert_yaxis()
+        plt.xlabel('# of terminals')
+        plt.ylabel('Layer depth [$\mu m$]')
+        plt.savefig(
+            join(save_folder, f"layer_terminal_dist_histogram_{key}_bins_{num_bins}_normalized.png"), dpi=300)
+
+        plt.figure()
+        plt.hist(value, bins=num_bins, weights=type_weights,
+                 orientation='horizontal')
         ax = plt.gca()
         ax.invert_yaxis()
         plt.xlabel('# of terminals')

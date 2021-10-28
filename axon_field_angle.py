@@ -90,6 +90,16 @@ elec_positions = np.array([[2000, 0, 0],
                             2000 * np.sin(7 * np.pi / 4)],
                            [0, 0, 2000]], dtype=float)
 
+# elec_positions = np.array([[2000, 0, 500],
+#                            [2000 * np.cos(np.pi / 4), 0, 2500 *
+#                             np.sin(np.pi / 4)],
+#                            [2000 * np.cos(np.pi / 2), 0, 2500 *
+#                             np.sin(np.pi / 2)],
+#                            [2000 * np.cos(np.pi / 6), 0, 2500 *
+#                             np.sin(np.pi / 6)],
+#                            [2000 * np.cos(np.pi / 3), 0, 2500 *
+#                             np.sin(np.pi / 3)]], dtype=float)
+
 dV_pot_dict = None
 I = -5e4  # uA
 
@@ -101,7 +111,7 @@ for pos in elec_positions:
         continue
 
     dV_pot_dict = run_axon_angle(
-        cell_models_folder, measure_coords, I, pos, True, False)
+        cell_models_folder, measure_coords, I, pos, True)
     print('Electrode position: ', pos)
     print('maximum potential: ', dV_pot_dict)
 

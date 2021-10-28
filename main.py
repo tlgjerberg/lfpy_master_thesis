@@ -241,7 +241,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         self.plotSim.plot_morphology(
             cell1, fig, xlim, ylim, morph_ax_params1)
-        print(self.x0)
+
         if self.x0 > 0:
             self.plotSim.draw_electrode(
                 self.x0, self.y0, self.z0, self.electrode_radii)
