@@ -19,6 +19,62 @@ plt.rcParams.update(**font_params)
 
 
 class NeuronSimulation:
+    """
+    A class for simulating a neuron using LFPy and NEURON and extracting features
+    and inforamtion.
+
+    Attributes:
+    ----------
+    root_folder : str
+        Path to working directory
+    save_folder : str
+        Path to save directory
+    dt : float
+        Simulation time step
+    tstop : int
+        Simulation end
+    cut_off : float
+        Simulation start time
+    cell_name : str
+        Name of cell model
+    cell_dist_to_top : int
+        z-direction coordinate shift
+    x_shift : int
+        x-direction coordinate shift
+    y_shift : int
+        y-direction coordinate shift
+    y_rot : float
+        Rotation around y-axis
+    z_rot : float
+        Rotation around y-axis
+
+    Methods:
+    -------
+    return_sim_name()
+
+    return_cell(cell_models_folder)
+
+    find_terminals(cell, measure_pnt)
+
+    create_measure_points(cell, com_coords)
+
+    find_secnames(self, cell)
+
+    print_measure_points(cell)
+
+    run_cell_simulation(cell, vmem=True, imem=False)
+
+    export_data(cell, vmem=True, imem=False)
+
+    import_data(vmem=True, imem=False)
+
+    max_mem_pot_dict(cell_vmem)
+
+    consolidate_v_max(sim_name, idx)
+
+    run_current_sim(cell_models_folder, comp_coords, passive=False)
+    """
+
     def __init__(self, cell_params):
 
         self.root_folder = os.path.dirname(__file__)
@@ -27,23 +83,31 @@ class NeuronSimulation:
         self.dt = cell_params['dt']
         self.tstop = cell_params['tstop']
         self.cut_off = cell_params["cut_off"]
-        self.cell_name = cell_params['cell_name']
+        self.cell_name = cell_params['cell_name']  # Name of cell model
         self.cell_dist_to_top = cell_params['cell_dist_to_top']
-        self.x_shift = cell_params['x_shift']
-        self.y_shift = cell_params['y_shift']
-        self.y_rot = cell_params['y_rot']
+        self.x_shift = cell_params['x_shift']  # x-direction coordinate shift
+        self.y_shift = cell_params['y_shift']  # y-direction coordinate shift
+        self.y_rot = cell_params['y_rot']  # Rotation around y-axis
         self.z_rot = cell_params['z_rot']  # Rotation around z-axis
 
         self.plotSim = PlotSimulation(self.save_folder)
         self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}'
 
     def return_sim_name(self):
-        """Returns a string containing simulation paramters"""
+        """Returns a string containing simulation parameters"""
 
         return self._sim_name
 
     def return_cell(self, cell_models_folder):
-        """Creates a LFPy cell object from a cell model"""
+        """
+        Creates a LFPy cell object from a cell model
+
+        Parameters:
+        cell_models_folder (str): Name of the directory location of cell models
+
+        Returns:
+        cell: LFPy Cell object determined by model and parameters
+        """
 
         if self.cell_name == 'axon':
 
@@ -53,8 +117,8 @@ class NeuronSimulation:
                 'morphology': model_path,
                 'nsegs_method': "lambda_f",
                 'lambda_f': 1000.,
-                'v_init': -65,
-                'passive': False,
+                'v_init': -65,  # initial crossmembrane potential
+                'passive': False,  # Toggle passive mechanisms
                 'dt': self.dt,  # [ms] Should be a power of 2
                 'tstart': -self.cut_off,  # [ms] Simulation start time
                 'tstop': self.tstop,  # [ms] Simulation end time
@@ -86,7 +150,7 @@ class NeuronSimulation:
                 # 'passive_parameters':dict(g_pas=1/30., e_pas=-65),
                 'v_init': -80.,    # initial crossmembrane potential
                 # 'e_pas' : -65.,     # reversal potential passive mechs
-                'passive': False,   # switch on passive mechs
+                'passive': False,   # Toggle passive mechanisms
                 'nsegs_method': 'lambda_f',
                 'lambda_f': 100.,
                 # [ms] dt's should be in powers of 2 for both,
@@ -123,6 +187,8 @@ class NeuronSimulation:
         """
         Setting measurement of membrane potential in compartments closest to
         coordinates.
+
+        Parameters:
         """
 
         measure_pnts = []
@@ -202,10 +268,10 @@ class NeuronSimulation:
         Exports arrays of time array, membrane potential and currents of a cells
         simulation to .npy files.
 
-        Input:
-        cell: LFPy Cell object
-        Bool: vmem: Arguement to export membrane potential file
-        Bool: imem: Arguement to export transmembrane current file
+        Parameters:
+        cell (LFPy.Cell): LFPy Cell object
+        vmem (bool): Arguement to export membrane potential file
+        imem (bool): Arguement to export transmembrane current file
         """
 
         # Create save folder if it does not exist
@@ -228,9 +294,9 @@ class NeuronSimulation:
         """
         Imports data from simulations saved to file
 
-        Input:
-        Bool: vmem: Arguement to import membrane potential file
-        Bool: imem: Arguement to import transmembrane current file
+        Parameters:
+        vmem (bool): Arguement to import membrane potential file
+        imem (bool): Arguement to import transmembrane current file
         """
 
         file_name = self._sim_name
@@ -253,11 +319,15 @@ class NeuronSimulation:
             self.cell_imem = np.load(ifile)
 
     def max_mem_pot_dict(self, cell_vmem):
-        """ Returns a dictionary with the maximum membrane potential at each
+        """
+        Returns a dictionary with the maximum membrane potential at each
         recorded compartment chosen as a measurement point.
 
-        Input:
-        Array: Cell membrane potential recordings
+        Parameters:
+        cell_vmem (array): Cell membrane potential recordings
+
+        Returns:
+        v_max: Dictionary of maximum potential for each measured compartment
         """
         v_max = {}
 
@@ -272,9 +342,9 @@ class NeuronSimulation:
         Loads a set of memembrane potential simulations and consolidates a list of
         all maximum potentials.
 
-        Input:
-        segement: String giving the path to a set of simulation.
-        idx: index of the compartment of interest.
+        Parameters:
+        sim_name (str): Path to a set of simulations.
+        idx (int): index of the compartment of interest.
 
         Returns:
         vml: A list of maximum potentials.
@@ -298,6 +368,14 @@ class NeuronSimulation:
         return vml
 
     def run_current_sim(self, cell_models_folder, comp_coords, passive=False):
+        """
+        Runs a set of methods for simulating the cell and and marking a spesific
+        set of compartments
+
+        Parameters:
+        cell (LFPy.Cell): LFPy Cell object determined by model and parameters
+
+        """
         cell = self.return_cell(cell_models_folder)
         self.create_measure_points(cell, comp_coords)
         self.extracellular_stimuli(cell)

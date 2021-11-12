@@ -26,7 +26,7 @@ def run_axon_angle(cell_models_folder, measure_coords, I, pos, run_sim=False, pl
     monophasic_pulse_params['pulse_amp'] = I
     monophasic_pulse_params['positions'] = pos
     monophasic_pulse_params['stop_time'] = 10.0
-    cellsim_bisc_stick_params['cell_dist_to_top'] = -500
+    cellsim_bisc_stick_params['cell_dist_to_top'] = -1000
 
     extPotSim = ExternalPotentialSimulation(
         cellsim_bisc_stick_params, monophasic_pulse_params)
@@ -53,8 +53,8 @@ def run_axon_angle(cell_models_folder, measure_coords, I, pos, run_sim=False, pl
         plotSim = PlotSimulation(extPotSim.save_folder)
         fig = plt.figure()
         plotSim.plot_idxs(extPotSim.measure_pnts)
-        plotSim.legend_list = ['Compartment 24',
-                               'Compartment 0', 'Compartment 48']
+        plotSim.legend_list = ['Compartment 0',
+                               'Compartment 24', 'Compartment 48']
         plotSim.plot_membrane_potential(
             fig, extPotSim.cell_tvec, extPotSim.cell_vmem, extPotSim.tstop)
 
@@ -72,33 +72,43 @@ def run_axon_angle(cell_models_folder, measure_coords, I, pos, run_sim=False, pl
     # return v_max
 
 
-measure_coords = np.array([[0, 0, -500], [0, 0, 0], [0, 0, 500]])
+# measure_coords = np.array([[0, 0, -500], [0, 0, 0], [0, 0, 500]])
+measure_coords = np.array([[0, 0, -1000], [-500, 0, 0], [0, 0, 0]])
 
-
-elec_positions = np.array([[2000, 0, 0],
-                           [2000 * np.cos(np.pi / 4), 0, 2000 *
-                            np.sin(np.pi / 4)],
-                           [2000 * np.cos(np.pi / 3), 0, 2000 *
-                            np.sin(np.pi / 3)],
-                           [2000 * np.cos(np.pi / 6), 0, 2000 *
-                            np.sin(np.pi / 6)],
-                           [2000 * np.cos(np.pi / 2), 0, 2000 *
-                            np.sin(np.pi / 2)],
-                           [2000 * np.cos(3 * np.pi / 2), 0,
-                            2000 * np.sin(3 * np.pi / 2)],
-                           [2000 * np.cos(7 * np.pi / 4), 0,
-                            2000 * np.sin(7 * np.pi / 4)],
-                           [0, 0, 2000]], dtype=float)
-
-# elec_positions = np.array([[2000, 0, 500],
-#                            [2000 * np.cos(np.pi / 4), 0, 2500 *
+# elec_positions = np.array([[2000, 0, 0],
+#                            [2000 * np.cos(np.pi / 4), 0, 2000 *
 #                             np.sin(np.pi / 4)],
-#                            [2000 * np.cos(np.pi / 2), 0, 2500 *
-#                             np.sin(np.pi / 2)],
-#                            [2000 * np.cos(np.pi / 6), 0, 2500 *
+#                            [2000 * np.cos(np.pi / 3), 0, 2000 *
+#                             np.sin(np.pi / 3)],
+#                            [2000 * np.cos(np.pi / 6), 0, 2000 *
 #                             np.sin(np.pi / 6)],
-#                            [2000 * np.cos(np.pi / 3), 0, 2500 *
+#                            [2000 * np.cos(np.pi / 2), 0, 2000 *
+#                             np.sin(np.pi / 2)],
+#                            [2000 * np.cos(3 * np.pi / 2), 0,
+#                             2000 * np.sin(3 * np.pi / 2)],
+#                            [2000 * np.cos(7 * np.pi / 4), 0,
+#                             2000 * np.sin(7 * np.pi / 4)],
+#                            [0, 0, 2000]], dtype=float)
+
+# elec_positions = np.array([[2000, 0, 0],
+#                            [2000 * np.cos(np.pi / 4), 0, 2000 *
+#                             np.sin(np.pi / 4)],
+#                            [2000 * np.cos(np.pi / 2), 0, 2000 *
+#                             np.sin(np.pi / 2)],
+#                            [2000 * np.cos(np.pi / 6), 0, 2000 *
+#                             np.sin(np.pi / 6)],
+#                            [2000 * np.cos(np.pi / 3), 0, 2000 *
 #                             np.sin(np.pi / 3)]], dtype=float)
+
+elec_positions = np.array([[1000, 0, 0],
+                           [1000 * np.cos(np.pi / 4), 0, 1000 *
+                            np.sin(np.pi / 4)],
+                           [1000 * np.cos(np.pi / 2), 0, 1000 *
+                            np.sin(np.pi / 2)],
+                           [1000 * np.cos(np.pi / 6), 0, 1000 *
+                            np.sin(np.pi / 6)],
+                           [1000 * np.cos(np.pi / 3), 0, 1000 *
+                            np.sin(np.pi / 3)]], dtype=float)
 
 dV_pot_dict = None
 I = -5e4  # uA
@@ -116,19 +126,3 @@ for pos in elec_positions:
     print('maximum potential: ', dV_pot_dict)
 
     print("RANK %d doing task %d" % (RANK, task_idx))
-
-
-# if v_max is not None:
-#     print(f'RANK {RANK} has reached gather')
-#     v_max_top = COMM.gather(v_max['0'], root=0)
-#     v_max_mid = COMM.gather(v_max['24'], root=0)
-#     v_max_bot = COMM.gather(v_max['48'], root=0)
-#
-# if RANK == 0:
-#     print(v_max_top)
-#     v_max_top_cons = sorted(list(flatten(v_max_top)), reverse=True)
-#     v_max_mid_cons = sorted(list(flatten(v_max_mid)), reverse=True)
-#     v_max_bot_cons = sorted(list(flatten(v_max_bot)), reverse=True)
-#     v_max_list = [v_max_top_cons, v_max_mid_cons, v_max_bot_cons]
-#     radians = [0, np.pi / 6, np.pi / 4, np.pi / 3, np.pi / 2]
-#     radians_sorted = sorted(radians)

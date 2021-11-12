@@ -22,6 +22,32 @@ plt.rcParams.update(**font_params)
 
 
 class PlotSimulation:
+    """
+    A class for plotting results of simulations
+
+    Attributes:
+    ----------
+    save_folder : str
+        a string pointing to a directory for saving plots
+
+    Methods:
+    -------
+    plot_idxs(measure_pnts)
+        Adds measurment points and color-coded points to compartments
+
+    add_legend(compart_idx_dict)
+        Adds legend of all selected compartments to a list
+
+    plot_morphology(cell, fig, xlim, ylim, morph_ax_params=[0.1, 0.1, 0.9, 0.9])
+        Plot a cell morphology
+
+    morphology_3D(self, cell, xlim, ylim, morph_ax_params=[0.1, 0.1, 0.9, 0.9])
+        Plot a 3D representation of a cell morphology
+
+    draw_electrode(self, x, y, z, electrode_radii)
+
+    plot_external_field(self, cell, fig, cb=False)
+    """
 
     def __init__(self, save_folder):
 
@@ -30,6 +56,13 @@ class PlotSimulation:
         # self.compart_idx_dict = compart_idx_dict
 
     def plot_idxs(self, measure_pnts):
+        """
+        Adds indices from a set of measurment points and tag each point with a
+        colored point
+
+        Parameters:
+        measure_pnts ():
+        """
 
         # Adding list of measurement points to plotting class
         self.cell_plot_idxs = measure_pnts.astype(
@@ -43,7 +76,8 @@ class PlotSimulation:
         """
         Create a list legends. One for each compartment measured.
 
-        Input:
+        Parameters:
+        compart_idx_dict (dict): Dictionary of
 
         Dict: dictionary of compartment index as key and the section name as value
         """
@@ -55,9 +89,18 @@ class PlotSimulation:
             self.legend_list.append(f'{compart_idx_dict[str(i)]}')
 
     def plot_morphology(self, cell, fig, xlim, ylim, morph_ax_params=[0.1, 0.1, 0.9, 0.9]):
-        """Plots the morphology of a cell model with separate colors for each
+        """
+        Plots the morphology of a cell model with separate colors for each
         type of neuron section and points marking compartments of interest
-        according to the measurement points."""
+        according to the measurement points.
+
+        Parameters:
+        cell (LFPy.Cell): LFPy Cell object determined by model and parameters
+        fig (plt.figure): Matplotlib figure
+        xlim (list): Span of x-coordinate in morphology figure
+        ylim (list): Span of y-coordinate in morphology figure
+        morph_ax_params (list): Axes placement parameters
+        """
 
         # Adding axes with appropriate parameters
         self.ax_m = fig.add_axes(morph_ax_params, aspect=1, frameon=False,
@@ -108,7 +151,7 @@ class PlotSimulation:
             [self.ax_m.plot(cell.x.mean(axis=1)[idx], cell.z.mean(axis=1)[idx], 'o',
                             c=self.cell_plot_colors[idx], ms=7) for idx in self.cell_plot_idxs]
 
-    def morphology_3D(self, cell):
+    def morphology_3D(self, cell, xlim, ylim, morph_ax_params=[0.1, 0.1, 0.9, 0.9]):
         """Plots a cell morphology in a 3D representation."""
 
         # List of measurement points
@@ -172,15 +215,30 @@ class PlotSimulation:
             join(self.save_folder, f'{self.cell_name}_{self.amp}mA_elec_pos={self.elec_pos}.png'))
 
     def draw_electrode(self, x, y, z, electrode_radii):
-        """Adds a point representing an electrode."""
+        """
+        Adds a point representing an electrode to a figure.
+
+        Parameters:
+        x (float): x-coordinate
+        y (float): y-coordinate
+        z (float): z-coordinate
+        electrode_radii (float): Radius of the electrode
+        """
 
         ellipse_pos = [x, z]
         self.ax_m.add_artist(Ellipse(ellipse_pos, width=20 * electrode_radii,
                                      height=20 * electrode_radii, fc='gray', ec='black'))
 
     def plot_external_field(self, cell, fig, cb=False):
-        """Plots a representation of the extracellular field around an
-        electrode."""
+        """
+        Plots a representation of the extracellular field around an
+        electrode to a figure.
+
+        Parameters:
+        cell (LFPy.Cell): LFPy Cell object determined by model and parameters
+        fig (plt.figure): Matplotlib figure
+        cb (bool): Adds a colorbar
+        """
 
         # self.extracellular_stimuli(cell)
 
@@ -211,7 +269,12 @@ class PlotSimulation:
             self.add_colorbar(fig)
 
     def add_colorbar(self, fig):
-        """Adds a colorbar to the extracellular field plot."""
+        """
+        Adds a colorbar to the extracellular field plot.
+
+        Parameters:
+        fig (plt.figure): Matplotlib figure
+        """
 
         # Divide axes of field and colorbar
         divider = make_axes_locatable(self.ax_m)
@@ -219,9 +282,19 @@ class PlotSimulation:
         # Add colorbar corresonding to field strength in mV
         fig.colorbar(self.ext_field_im, pad=0.05, ax=self.ax_m, cax=cax)
 
-    def plot_membrane_potential(self, fig, tvec, vmem, tstop, placement=[0.17, 0.11, .7, .8], leg=True):
-        """Plots the change in membrane potential over time corresponding to
-        each compartment marked as a measurement point."""
+    def plot_membrane_potential(self, fig, tvec, vmem, tstop, placement=[0.17, 0.11, .7, .8], legend=True):
+        """
+        Plots the change in membrane potential over time corresponding to
+        each compartment marked as a measurement point.
+
+        Parameters:
+        fig (plt.figure): Matplotlib figure
+        tvec (array): Time steps of a cell simulation
+        vmem (array): Recorded membrane potential of a cell simulation
+        tstop (int): Stopping time in miliseconds
+        placement (list): Axes placement parameters
+        legend (bool): Turn on legend for a set of chosen compartments
+        """
 
         ax_vm = fig.add_axes(placement,  # ylim=[-120, 50],
                              xlim=[0, tstop], xlabel="Time (ms)")
@@ -231,12 +304,21 @@ class PlotSimulation:
         # mark_subplots([ax_stim, ax_vm], "BC", xpos=-0.02, ypos=0.98)
         [ax_vm.plot(tvec, vmem[idx],
                     c=self.cell_plot_colors[idx], lw=2) for idx in self.cell_plot_idxs]
-        if leg:
+        if legend:
             ax_vm.legend(self.legend_list)
 
     def plot_current_pulse(self, fig, tvec, pulse, tstop, placement):
-        """Plots the current pulse used to set up the stimulating electrical
-        field."""
+        """
+        Plots the current pulse used to set up the stimulating electrical
+        field.
+
+        Parameters:
+        fig (plt.figure): Matplotlib figure
+        tvec (array): Time steps of a cell simulation
+        pulse (array): Current pulse added to simulations
+        tstop (int): Stopping time in miliseconds
+        placement (list): Axes placement parameters
+        """
 
         ax_stim = fig.add_axes(placement, xlim=[0, tstop],
                                ylabel="Stimuli\ncurrent ($\mu$A)", xlabel="Time (ms)")
@@ -247,6 +329,15 @@ class PlotSimulation:
         """
         Ploting a combined figure of cell morphology, current amplitude and
         membrane potential
+
+        Parameters:
+        cell (LFPy.Cell): LFPy Cell object determined by model and parameters
+        com_coords (2D array): A set of compartments where potential changes are
+                                measured explicitly
+        morph_ax_params (list): Axes placement parameters
+        xlim (list): Span of x-coordinate in morphology figure
+        ylim (list): Span of y-coordinate in morphology figure
+        field (bool): Toggle field visualization
         """
         self.xlim = xlim
         self.ylim = ylim
@@ -297,7 +388,14 @@ class PlotSimulation:
         plt.close(fig=fig_mem)
 
     def plot_steady_state(self, elec_abs_dists, steady_state):
-        """Plots steady state potentials compared to distance from """
+        """
+        Plots steady state potentials compared against the electrode distance
+        from a recorded compartment.
+
+        Parameters:
+
+
+        """
 
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')
@@ -312,8 +410,15 @@ class PlotSimulation:
         # plt.show()
 
     def plot_dV(self, elec_dists, dV):
-        """Plots the change in potential dV against the electrode distance from
-        a recorded compartment."""
+        """
+        Plots the change in potential dV against the electrode distance from
+        a recorded compartment.
+
+        Parameters:
+        elec_dists (list): List of increasing distances between an axon terminal
+                            and external electrode
+        dV (list): Change in potential at a given distance
+        """
 
         fig, ax = plt.subplots()
         ax.set_xlabel('Electrode Distance from Cell Origin ($\mu m$)')

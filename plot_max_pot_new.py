@@ -13,7 +13,7 @@ from matplotlib.cbook import flatten
 
 
 cell_models_folder = join(os.path.dirname(__file__), "cell_models")
-cellsim_Hallermann_params['save_folder_name'] = 'data/Hallermann_ext_stim/no_field/'
+cellsim_Hallermann_params['save_folder_name'] = 'data_copy/Hallermann_ext_stim/no_field/'
 cellsim_Hallermann_params['z_rot'] = np.pi
 save_folder = 'data/Hallermann_ext_stim/no_field/'
 current_amps = [-10.0, -10.5, -11.0, -11.5, -12.0, -12.5, -13.0, -13.5, -14.0, -14.5, -

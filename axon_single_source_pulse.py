@@ -32,17 +32,17 @@ elec_positions = np.array([[0, 0, -50],
                            [0, 0, -6400],
                            [0, 0, -12800]], dtype=float)
 
-elec_positions = np.array([[0, 0, -50],
-                           [0, 0, -100],
-                           [0, 0, -200],
-                           [0, 0, -400],
-                           [0, 0, -800]], dtype=float)
-
-elec_positions = np.array([[0, 0, -800],
-                           [0, 0, -1600],
-                           [0, 0, -3200],
-                           [0, 0, -6400],
-                           [0, 0, -12800]], dtype=float)
+# elec_positions = np.array([[0, 0, -50],
+#                            [0, 0, -100],
+#                            [0, 0, -200],
+#                            [0, 0, -400],
+#                            [0, 0, -800]], dtype=float)
+#
+# elec_positions = np.array([[0, 0, -800],
+#                            [0, 0, -1600],
+#                            [0, 0, -3200],
+#                            [0, 0, -6400],
+#                            [0, 0, -12800]], dtype=float)
 
 
 measure_coordinates = np.array(
@@ -125,7 +125,7 @@ if RANK == 0:
 
     # Fitting the change in potential loglog space as a linear
     fit.curve_fit(np.log(elec_dists), np.log(dV), "linlaw")
-    fit.plot_curve()
+    fit.plot_curve(xlabel="log(r) [$\mu m$]", ylabel="log(dV) [mV]")
     fit.fit_measure()
 
 

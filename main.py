@@ -15,6 +15,10 @@ from scipy.signal import argrelextrema
 class ExternalPotentialSimulation(NeuronSimulation):
 
     def __init__(self, cell_params, elec_params):
+        """
+        A class for adding extracellular stimulation to cell simulations
+        """
+
         super().__init__(cell_params)
 
         self.amp = elec_params['pulse_amp']
@@ -29,19 +33,27 @@ class ExternalPotentialSimulation(NeuronSimulation):
         self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.x0}_{self.y0}_{self.z0}_t={self.stop_time}_Amp={self.amp}mA'
 
     def return_sim_name(self):
-        """Returns a name string containing simulation paramters"""
+        """Returns a name string containing simulation parameters"""
 
         return self._sim_name
 
     def update_sim_name(self):
         """
-        Updates the name string containing simulation paramters to include
-        stimulation paramters.
+        Updates the name string containing simulation parameters to include
+        stimulation parameters.
         """
 
         self._sim_name = f'{self.cell_name}_x_shift={self.x_shift}_z_shift={self.cell_dist_to_top}_z_rot={self.z_rot:.2f}_y_rot={self.y_rot:.2f}_elec_pos={self.x0}_{self.y0}_{self.z0}_t={self.stop_time}_Amp={self.amp}mA'
 
     def _monophaic_pulse(self, n_tsteps, t):
+        """
+        Create a current pulse array to add external electrode to simulation
+
+        Parameters:
+        n_tsteps (int): Number of time steps for current pulse simulation
+        t (array): Array of pulse simulation time steps
+        """
+
         # Setting monophasic pulse change at a given time interval
         self.pulse = np.zeros(n_tsteps)
         self.start_idx = np.argmin(np.abs(t - self.start_time))
@@ -49,6 +61,14 @@ class ExternalPotentialSimulation(NeuronSimulation):
         self.pulse[self.start_idx:self.stop_idx] = self.amp
 
     def insert_pulse(self, n_tsteps, t):
+        """
+        Adds a pulse to simulate an electrode
+
+        Parameters:
+        n_tsteps (int): Number of time steps for current pulse simulation
+        t (array): Array of pulse simulation time steps
+        """
+
         if self.pulse_type == 'monophasic':
             self._monophaic_pulse(n_tsteps, t)
 
@@ -97,10 +117,12 @@ class ExternalPotentialSimulation(NeuronSimulation):
         """ Returns the change in potential dV computed from the steady state
             potential.
 
-        Input: A 1-D array containing the steady state potentials from a set of
-               simulations
+        Parameters:
+        v_ss (array): A 1-D array containing the steady state potentials from a
+                        set of simulations
 
-        Returns: 1-D array of change in potential dV
+        Returns:
+        dV: 1-D array of change in potential
         """
 
         dV = np.zeros(len(v_ss))  # dV array
@@ -114,8 +136,11 @@ class ExternalPotentialSimulation(NeuronSimulation):
         """ Returns a dictionary with the maximum membrane potential at each
         recorded compartment chosen as a measurement point.
 
-        Input:
-        Array: Cell membrane potential recordings
+        Parameters:
+        cell_vmem: Cell membrane potential recordings
+
+        Returns:
+        dV_pot_dict: A dictionary of dV at a set of compartments
         """
         dV_pot_dict = {}
 
@@ -128,6 +153,17 @@ class ExternalPotentialSimulation(NeuronSimulation):
         return dV_pot_dict
 
     def return_dist_to_electrode(self, com_coords):
+        """
+        Returns the distance between the coordinate of a compartment and the
+        external electrode
+
+        Parameters:
+        com_coords (2D array): A set of compartments where potential changes are
+                                measured explicitly
+
+        Returns:
+        self.record_dist:
+        """
 
         self.record_dist = np.zeros(com_coords.shape[0])
 
@@ -138,10 +174,18 @@ class ExternalPotentialSimulation(NeuronSimulation):
         return self.record_dist
 
     def run_ext_sim(self, cell, comp_coords, passive=False, verbose=False):
-        """ Runs a cell simulation with an added extracellular potential
+        """
+        Runs a set of methods for simulating the cell and and marking a spesific
+        set of compartments
 
-            Input: LFPy Cell object and coordinates for the comparments to
-                   record.
+        Parameters:
+        cell (LFPy.Cell): LFPy Cell object determined by model and parameters
+        com_coords (2D array): A set of compartments where potential changes are
+                                measured explicitly
+        passive (bool): Turns on passive mechanisms
+        verbose (bool): Turns on printing of additional inforamtion about the
+                        simulation
+
         """
 
         self.create_measure_points(cell, comp_coords)
@@ -153,12 +197,16 @@ class ExternalPotentialSimulation(NeuronSimulation):
         self.run_cell_simulation(cell)
         self.export_data(cell)
 
-        cell.__del__()
+        cell.__del__()  # Delete cell object to clear NEURON environment
 
     def plot_cellsim(self, cell_models_folder, measure_coords, morph_ax_params, xlim=[-500, 760], ylim=[-600, 1400], field=False):
         """
         Ploting a combined figure of cell morphology, current amplitude and
-        membrane potential
+        membrane potential of a cell simulation
+
+        Parameters:
+        cell_models_folder (str): Path to directory containing cell models
+        measure_coords (list): Coordinates of
         """
 
         self.import_data()
@@ -169,7 +217,7 @@ class ExternalPotentialSimulation(NeuronSimulation):
 
         # Recreating the cell object used in simulatios without running simul
         cell = self.return_cell(cell_models_folder)
-        self.create_measure_points(cell, com_coords)
+        self.create_measure_points(cell, measure_coords)
 
         # Simulating cell after all parameters and field has been added
         fig = plt.figure(figsize=[10, 8])
